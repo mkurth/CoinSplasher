@@ -3,7 +3,7 @@ package org.poki.coinsplasher.market.repo
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.poki.coinsplasher.Coin
-import org.poki.coinsplasher.domain.MarketRepo
+import org.poki.coinsplasher.domain.{MarketCoin, MarketRepo}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.JsonBodyReadables._
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -53,13 +53,16 @@ class CoinMarketCap extends MarketRepo {
 
   val wsClient = StandaloneAhcWSClient()
 
-  override def loadMarketData: Future[Seq[Coin]] = {
+  override def loadMarketData: Future[Seq[MarketCoin]] = {
     wsClient.url(tickerURL)
       .get()
       .map(_.body[JsValue])
       .map(json => (json \ "data").validate[JsObject].get)
       .map(data => data.fields.map({ case (key, value) => value.validate[CoinInfo].get }))
       .map(coinInfos => coinInfos.map(coinInfo => CoinInfoWithQuota(coinInfo, coinInfo.quotes.fields.map({ case (currency, value) => value.validate[Quota].get.withCurrency(currency) }))))
-      .map(_.sortBy(_.rank).map(_.toCoin))
+      .map(_.sortBy(_.rank).map(cwq => {
+        val coin = cwq.toCoin
+        MarketCoin(coin, cwq.quotes.find(_.currency == "EUR").get.price)
+      }))
   }
 }
