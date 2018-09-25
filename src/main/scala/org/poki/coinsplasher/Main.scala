@@ -19,9 +19,10 @@ object Main extends App {
   val blacklistedCoins = Seq("USDT")
 
   marketRepo.loadMarketData
-    .map(coins => Rebalancer.rebalanceByMarketCap(coins.filter(coin => !blacklistedCoins.contains(coin.short)).take(20), threshold))
+    .map(coins => Rebalancer.rebalance(by = _.marketCap)(coins.filter(coin => !blacklistedCoins.contains(coin.short)).take(20), threshold))
     .foreach(coins => {
-      println("marke " + coins.mkString("\n"))
+      println("marketcap " + coins.mkString("\n"))
       sys.exit(0)
     })
+
 }
