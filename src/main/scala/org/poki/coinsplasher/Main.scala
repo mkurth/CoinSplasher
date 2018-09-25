@@ -7,9 +7,9 @@ import org.poki.coinsplasher.trade.repo.Binance
 import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-case class Coin(short: String, marketCap: BigDecimal, tradeCap: BigDecimal)
+case class Coin(coinSymbol: String, marketCap: BigDecimal, tradeCap: BigDecimal)
 
-case class CoinBalance(symbol: String, amount: BigDecimal)
+case class CoinBalance(coinSymbol: String, amount: BigDecimal)
 
 case class Share(coin: Coin, share: BigDecimal)
 
@@ -24,7 +24,7 @@ object Main extends App {
 
   private val marketData = marketRepo.loadMarketData
   val targetShares = marketData
-    .map(coins => Rebalancer.rebalance(by = _.marketCap)(coins.filter(mc => !blacklistedCoins.contains(mc.coin.short)).take(20).map(_.coin), threshold))
+    .map(coins => Rebalancer.rebalance(by = _.marketCap)(coins.filter(mc => !blacklistedCoins.contains(mc.coin.coinSymbol)).take(20).map(_.coin), threshold))
   val actualShares = tradeRepo.currentBalance
 
 }
