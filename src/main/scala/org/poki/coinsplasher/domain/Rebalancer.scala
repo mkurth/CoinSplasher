@@ -1,10 +1,11 @@
 package org.poki.coinsplasher.domain
 
+import org.poki.coinsplasher.domain.Types.Percent
 import org.poki.coinsplasher.{Coin, Share}
 
 object Rebalancer {
 
-  def rebalance(by: Coin => BigDecimal)(data: Seq[Coin], maxShareInPercent: BigDecimal): Seq[Share] = {
+  def rebalance(by: Coin => Percent)(data: Seq[Coin], maxShareInPercent: Percent): Seq[Share] = {
     val totalCap = data.map(by).sum
     val shares = data.map(coin => Share(coin, by(coin) / totalCap))
     val (sharesOverThreshold, sharesBeneathThreshold) = shares.partition(_.share >= maxShareInPercent)
@@ -14,7 +15,7 @@ object Rebalancer {
     sharesOverThreshold.map(s => s.copy(share = maxShareInPercent)) ++ rebalanceShares(by)(scaledBeneath, maxShareInPercent, restPercent)
   }
 
-  private def rebalanceShares(by: Coin => BigDecimal = coin => coin.marketCap)(shares: Seq[Share], maxShareInPercent: BigDecimal, remaining: BigDecimal): Seq[Share] = {
+  private def rebalanceShares(by: Coin => Percent = coin => coin.marketCap)(shares: Seq[Share], maxShareInPercent: Percent, remaining: Percent): Seq[Share] = {
     val (sharesOverThreshold, sharesBeneathThreshold) = shares.partition(_.share >= maxShareInPercent)
     val sum = sharesBeneathThreshold.map(_.share).sum
     val cappedOver = sharesOverThreshold.map(s => s.copy(share = maxShareInPercent))

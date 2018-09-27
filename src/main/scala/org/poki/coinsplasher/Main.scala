@@ -1,5 +1,6 @@
 package org.poki.coinsplasher
 
+import org.poki.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
 import org.poki.coinsplasher.domain.{MarketRepo, Rebalancer, TradeRepo}
 import org.poki.coinsplasher.market.repo.CoinMarketCap
 import org.poki.coinsplasher.trade.repo.Binance
@@ -7,11 +8,11 @@ import org.poki.coinsplasher.trade.repo.Binance
 import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-case class Coin(coinSymbol: String, marketCap: BigDecimal, tradeCap: BigDecimal)
+case class Coin(coinSymbol: CoinSymbol, marketCap: BigDecimal, tradeCap: BigDecimal)
 
-case class CoinBalance(coinSymbol: String, amount: BigDecimal)
+case class CoinBalance(coinSymbol: CoinSymbol, amount: CoinShare)
 
-case class Share(coin: Coin, share: BigDecimal)
+case class Share(coin: Coin, share: Percent)
 
 object Main extends App {
 
