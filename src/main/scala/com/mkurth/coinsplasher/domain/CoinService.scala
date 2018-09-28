@@ -24,24 +24,25 @@ trait NormalisedCoinSymbols {
 
 class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo)(implicit ec: ExecutionContext) extends NormalisedCoinSymbols {
 
-  val blacklistedCoins = Seq("USDT")
+  val blacklistedCoins = Seq("USDT", "XTZ", "DOGE")
+  val ignoreBalanceForCoins = Seq("VEN", "GAS", "VTHO")
 
   def calculateOrders: Future[Seq[Order]] = {
     val threshold = 0.10
     val marketData = marketRepo.loadMarketData(blacklistedCoins).map(normaliseCoinSymbols)
-    val actualShares = tradeRepo.currentBalance
+    val actualShares = tradeRepo.currentBalance(ignoreBalanceForCoins)
     for {
       balance <- actualShares
       market <- marketData
       shares = ShareCalculator.shares(by = _.marketCap)(market.take(20).map(_.coin), threshold)
-    } yield TradeSolver.solveTrades(balance, shares, market)
+    } yield TradeSolver.solveTrades(balance, shares, market).filter(_.coinSymbol != "BTC")
   }
 
   def executeOrders(orders: Seq[Order]): Future[Seq[Any]] = {
     val (sellOrders, buyOrders) = orders.partition(_.isInstanceOf[SellOrder])
     for {
-      soldOrders <- Future.sequence(sellOrders.map { case order: SellOrder => tradeRepo.sell(order) })
-      boughtOrders <- Future.sequence(buyOrders.map { case order: BuyOrder => tradeRepo.buy(order) })
+      soldOrders <- Future.sequence(sellOrders.collect { case order: SellOrder => tradeRepo.sell(order) })
+      boughtOrders <- Future.sequence(buyOrders.collect { case order: BuyOrder => tradeRepo.buy(order) })
     } yield soldOrders ++ boughtOrders
   }
 

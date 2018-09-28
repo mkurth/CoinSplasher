@@ -6,7 +6,10 @@ import com.mkurth.coinsplasher.domain.repo.MarketCoin
 
 import scala.language.implicitConversions
 
-sealed trait Order
+sealed trait Order {
+  val coinSymbol: CoinSymbol
+  val amount: CoinShare
+}
 
 case class SellOrder(coinSymbol: CoinSymbol, amount: CoinShare) extends Order
 

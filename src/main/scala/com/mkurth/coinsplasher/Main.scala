@@ -5,8 +5,7 @@ import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
 import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
 import com.mkurth.coinsplasher.portadapter.repo.trade.Binance
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.StdIn
 import scala.language.postfixOps
 import scala.util.control.NonFatal
@@ -26,25 +25,15 @@ object Main extends App {
     }).mkString("\n"))
   })
 
-  try {
-    val orders = Await.result(trades, 30 seconds)
-    orders.sortBy({
-      case BuyOrder(coinSymbol, amount) => amount
-      case SellOrder(coinSymbol, amount) => amount * -1
-    }).foreach(order => {
-      if (readBoolean(s"execute order $order: ")) {
-        order match {
-          case sellOrder: SellOrder => println(Await.result(tradeRepo.sell(sellOrder), 10 seconds))
-          case buyOrder: BuyOrder => println(Await.result(tradeRepo.buy(buyOrder), 10 seconds))
-        }
-      }
-    })
-  } catch {
-    case NonFatal(e) => e.printStackTrace()
-  }
-  finally {
-    sys.exit()
-  }
+  val x: Future[Object] = if(readBoolean("execute?")){
+    trades.map(service.executeOrders)
+  } else {
+    Future.successful("nothing to do")
+  }.recover({case NonFatal(e) =>
+    e.printStackTrace()
+    e.getMessage
+  })
+  x.onComplete(sys.exit())
 
   def readBoolean(message: String): Boolean = {
     StdIn.readLine(message).toLowerCase match {
