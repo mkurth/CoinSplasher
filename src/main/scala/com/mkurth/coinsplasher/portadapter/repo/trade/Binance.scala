@@ -1,11 +1,11 @@
-package org.poki.coinsplasher.trade.repo
+package com.mkurth.coinsplasher.portadapter.repo.trade
 
 import com.binance.api.client.BinanceApiClientFactory
 import com.binance.api.client.domain._
+import com.binance.api.client.domain.account.NewOrder.{marketBuy, marketSell}
 import com.binance.api.client.impl.{BinanceApiAsyncRestClientImpl, BinanceApiWebSocketClientImpl}
-import org.poki.coinsplasher.CoinBalance
-import org.poki.coinsplasher.domain.TradeRepo
-import com.binance.api.client.domain.account.NewOrder.{limitBuy, marketBuy, marketSell}
+import com.mkurth.coinsplasher.CoinBalance
+import com.mkurth.coinsplasher.domain.repo.TradeRepo
 
 import scala.concurrent.{ExecutionContext, Future}
 

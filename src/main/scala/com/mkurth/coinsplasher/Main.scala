@@ -1,9 +1,10 @@
-package org.poki.coinsplasher
+package com.mkurth.coinsplasher
 
-import org.poki.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
-import org.poki.coinsplasher.domain.{MarketRepo, ShareCalculator, TradeRepo}
-import org.poki.coinsplasher.market.repo.CoinMarketCap
-import org.poki.coinsplasher.trade.repo.Binance
+import com.mkurth.coinsplasher.domain.ShareCalculator
+import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
+import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
+import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
+import com.mkurth.coinsplasher.portadapter.repo.trade.Binance
 
 import scala.concurrent.ExecutionContext
 import scala.language.postfixOps

@@ -1,10 +1,10 @@
-package org.poki.coinsplasher.market.repo
+package com.mkurth.coinsplasher.portadapter.repo.market
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.poki.coinsplasher.Coin
-import org.poki.coinsplasher.domain.{MarketCoin, MarketRepo}
-import play.api.libs.json.{JsObject, JsValue, Json}
+import com.mkurth.coinsplasher.Coin
+import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo}
+import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 import play.api.libs.ws.JsonBodyReadables._
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
@@ -48,8 +48,8 @@ class CoinMarketCap extends MarketRepo {
   }
   implicit val ec: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val coinFormat = Json.format[CoinInfo]
-  implicit val quotaFormat = Json.format[Quota]
+  implicit val coinFormat: OFormat[CoinInfo] = Json.format[CoinInfo]
+  implicit val quotaFormat: OFormat[Quota] = Json.format[Quota]
 
   val wsClient = StandaloneAhcWSClient()
 

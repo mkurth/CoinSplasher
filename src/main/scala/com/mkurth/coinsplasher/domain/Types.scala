@@ -1,4 +1,4 @@
-package org.poki.coinsplasher.domain
+package com.mkurth.coinsplasher.domain
 
 object Types {
 
@@ -12,9 +12,12 @@ object Types {
   type CoinShare = BigDecimal
 
   /**
-    * balance on trade exchange in currency
+    * balance on trade exchange in currency, e.g. 1300 (€)
     */
   type UserBalance = BigDecimal
 
+  /**
+    * e.g.: BTC, LTC
+    */
   type CoinSymbol = String
 }

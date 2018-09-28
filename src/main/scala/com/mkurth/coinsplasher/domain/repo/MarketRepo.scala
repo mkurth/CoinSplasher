@@ -1,6 +1,6 @@
-package org.poki.coinsplasher.domain
+package com.mkurth.coinsplasher.domain.repo
 
-import org.poki.coinsplasher.Coin
+import com.mkurth.coinsplasher.Coin
 
 import scala.concurrent.Future
 

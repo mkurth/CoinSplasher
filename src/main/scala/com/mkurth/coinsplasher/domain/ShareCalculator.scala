@@ -1,7 +1,7 @@
-package org.poki.coinsplasher.domain
+package com.mkurth.coinsplasher.domain
 
-import org.poki.coinsplasher.domain.Types.Percent
-import org.poki.coinsplasher.{Coin, Share}
+import com.mkurth.coinsplasher.{Coin, Share}
+import Types.Percent
 
 object ShareCalculator {
 

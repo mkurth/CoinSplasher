@@ -1,7 +1,8 @@
-package org.poki.coinsplasher.domain
+package com.mkurth.coinsplasher.domain
 
-import org.poki.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
-import org.poki.coinsplasher.{CoinBalance, Share}
+import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
+import com.mkurth.coinsplasher.domain.repo.MarketCoin
+import com.mkurth.coinsplasher.{CoinBalance, Share}
 
 import scala.language.implicitConversions
 
