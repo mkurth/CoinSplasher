@@ -1,7 +1,7 @@
 package org.poki.coinsplasher
 
 import org.poki.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
-import org.poki.coinsplasher.domain.{MarketRepo, Rebalancer, TradeRepo}
+import org.poki.coinsplasher.domain.{MarketRepo, ShareCalculator, TradeRepo}
 import org.poki.coinsplasher.market.repo.CoinMarketCap
 import org.poki.coinsplasher.trade.repo.Binance
 
@@ -25,7 +25,7 @@ object Main extends App {
 
   private val marketData = marketRepo.loadMarketData
   val targetShares = marketData
-    .map(coins => Rebalancer.rebalance(by = _.marketCap)(coins.filter(mc => !blacklistedCoins.contains(mc.coin.coinSymbol)).take(20).map(_.coin), threshold))
+    .map(coins => ShareCalculator.shares(by = _.marketCap)(coins.filter(mc => !blacklistedCoins.contains(mc.coin.coinSymbol)).take(20).map(_.coin), threshold))
   val actualShares = tradeRepo.currentBalance
 
 }
