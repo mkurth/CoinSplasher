@@ -3,6 +3,7 @@ package com.mkurth.coinsplasher.portadapter.repo.market
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.mkurth.coinsplasher.Coin
+import com.mkurth.coinsplasher.domain.Types.CoinSymbol
 import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo}
 import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 import play.api.libs.ws.JsonBodyReadables._
@@ -40,7 +41,7 @@ object CoinInfoWithQuota {
 class CoinMarketCap extends MarketRepo {
 
   final val listingURL = "https://api.coinmarketcap.com/v2/listings/"
-  final val tickerURL = "https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=30"
+  final val tickerURL = "https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=40"
 
   implicit val system: ActorSystem = ActorSystem()
   system.registerOnTermination {
@@ -53,12 +54,13 @@ class CoinMarketCap extends MarketRepo {
 
   val wsClient = StandaloneAhcWSClient()
 
-  override def loadMarketData: Future[Seq[MarketCoin]] = {
+  override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq()): Future[Seq[MarketCoin]] = {
     wsClient.url(tickerURL)
       .get()
       .map(_.body[JsValue])
       .map(json => (json \ "data").validate[JsObject].get)
       .map(data => data.fields.map({ case (key, value) => value.validate[CoinInfo].get }))
+      .map(_.filter(coinInfo => !blacklisted.contains(coinInfo.symbol)))
       .map(coinInfos => coinInfos.map(coinInfo => CoinInfoWithQuota(coinInfo, coinInfo.quotes.fields.map({ case (currency, value) => value.validate[Quota].get.withCurrency(currency) }))))
       .map(_.sortBy(_.rank).map(cwq => {
         val coin = cwq.toCoin

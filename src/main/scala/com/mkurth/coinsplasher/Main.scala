@@ -1,6 +1,6 @@
 package com.mkurth.coinsplasher
 
-import com.mkurth.coinsplasher.domain.ShareCalculator
+import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder, ShareCalculator, TradeSolver}
 import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
 import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
 import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
@@ -24,9 +24,22 @@ object Main extends App {
   val threshold = 0.10
   val blacklistedCoins = Seq("USDT")
 
-  private val marketData = marketRepo.loadMarketData
+  private val marketData = marketRepo.loadMarketData(blacklistedCoins)
   val targetShares = marketData
-    .map(coins => ShareCalculator.shares(by = _.marketCap)(coins.filter(mc => !blacklistedCoins.contains(mc.coin.coinSymbol)).take(20).map(_.coin), threshold))
+    .map(coins => ShareCalculator.shares(by = _.marketCap)(coins.take(30).map(_.coin), threshold))
   val actualShares = tradeRepo.currentBalance
+  val trades = for {
+    balance <- actualShares
+    shares <- targetShares
+    market <- marketData
+  } yield TradeSolver.solveTrades(balance, shares, market)
+
+  trades.foreach(trade => {
+    println(trade.sortBy({
+      case BuyOrder(coinSymbol, amount) => amount
+      case SellOrder(coinSymbol, amount) => amount * -1
+    }).mkString("\n"))
+    sys.exit()
+  })
 
 }

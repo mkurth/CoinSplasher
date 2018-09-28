@@ -8,12 +8,15 @@ import com.mkurth.coinsplasher.CoinBalance
 import com.mkurth.coinsplasher.domain.repo.TradeRepo
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.StdIn
 
 class Binance extends TradeRepo {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
-  val factory = new BinanceApiClientFactory(sys.env("BINANCE_API_KEY"), sys.env("BINANCE_SECRET"))
+  val factory = new BinanceApiClientFactory(
+    sys.env.getOrElse("BINANCE_API_KEY", StdIn.readLine("binance api key: ")),
+    sys.env.getOrElse("BINANCE_SECRET",  StdIn.readLine("binance secret : ")))
   val client: BinanceApiAsyncRestClientImpl = factory.newAsyncRestClient
   val webSocketClient: BinanceApiWebSocketClientImpl = factory.newWebSocketClient
 
@@ -21,6 +24,7 @@ class Binance extends TradeRepo {
     client
       .getAccount()
       .map(_.balances.map(ab => CoinBalance(ab.asset.value, ab.free.value)))
+      .map(_.filter(_.amount > 0))
   }
 
   override def buy(coin: String, amount: BigDecimal): Future[Any] = {
