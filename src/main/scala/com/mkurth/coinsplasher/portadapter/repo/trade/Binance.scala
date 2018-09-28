@@ -4,6 +4,7 @@ import com.binance.api.client.BinanceApiClientFactory
 import com.binance.api.client.domain._
 import com.binance.api.client.domain.account.NewOrder.{marketBuy, marketSell}
 import com.binance.api.client.impl.{BinanceApiAsyncRestClientImpl, BinanceApiWebSocketClientImpl}
+import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder}
 import com.mkurth.coinsplasher.domain.model.CoinBalance
 import com.mkurth.coinsplasher.domain.repo.TradeRepo
 
@@ -27,11 +28,11 @@ class Binance extends TradeRepo {
       .map(_.filter(_.amount > 0))
   }
 
-  override def buy(coin: String, amount: BigDecimal): Future[Any] = {
-    client.newOrderTest(marketBuy(Symbol(coin), Quantity(amount)))
+  override def buy(order: BuyOrder): Future[Any] = {
+   client.newOrderTest(marketBuy(Symbol("BNB" + order.coinSymbol), Quantity(order.amount)))
   }
 
-  override def sell(coin: String, amount: BigDecimal): Future[Any] = {
-    client.newOrderTest(marketSell(Symbol(coin), Quantity(amount)))
+  override def sell(order: SellOrder): Future[Any] = {
+    client.newOrderTest(marketSell(Symbol("BNB" + order.coinSymbol), Quantity(order.amount)))
   }
 }
