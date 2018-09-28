@@ -1,7 +1,7 @@
 package com.mkurth.coinsplasher.domain
 
+import com.mkurth.coinsplasher.domain.model.{Coin, CoinBalance, Share}
 import com.mkurth.coinsplasher.domain.repo.MarketCoin
-import com.mkurth.coinsplasher.{Coin, CoinBalance, Share}
 import org.scalatest.{FlatSpec, Matchers}
 
 class TradeSolverTest extends FlatSpec with Matchers {

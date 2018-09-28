@@ -4,7 +4,7 @@ import com.binance.api.client.BinanceApiClientFactory
 import com.binance.api.client.domain._
 import com.binance.api.client.domain.account.NewOrder.{marketBuy, marketSell}
 import com.binance.api.client.impl.{BinanceApiAsyncRestClientImpl, BinanceApiWebSocketClientImpl}
-import com.mkurth.coinsplasher.CoinBalance
+import com.mkurth.coinsplasher.domain.model.CoinBalance
 import com.mkurth.coinsplasher.domain.repo.TradeRepo
 
 import scala.concurrent.{ExecutionContext, Future}

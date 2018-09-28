@@ -1,7 +1,7 @@
 package com.mkurth.coinsplasher.domain
 
-import com.mkurth.coinsplasher.{Coin, Share}
-import Types.Percent
+import com.mkurth.coinsplasher.domain.Types.Percent
+import com.mkurth.coinsplasher.domain.model.{Coin, Share}
 
 object ShareCalculator {
 

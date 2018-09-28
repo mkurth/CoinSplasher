@@ -2,8 +2,8 @@ package com.mkurth.coinsplasher.portadapter.repo.market
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.mkurth.coinsplasher.Coin
 import com.mkurth.coinsplasher.domain.Types.CoinSymbol
+import com.mkurth.coinsplasher.domain.model.Coin
 import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo}
 import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 import play.api.libs.ws.JsonBodyReadables._

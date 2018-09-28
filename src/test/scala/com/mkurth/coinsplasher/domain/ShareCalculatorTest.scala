@@ -2,7 +2,7 @@ package com.mkurth.coinsplasher.domain
 
 import java.math.MathContext
 
-import com.mkurth.coinsplasher.{Coin, Share}
+import com.mkurth.coinsplasher.domain.model.{Coin, Share}
 import org.scalatest._
 
 class ShareCalculatorTest extends FlatSpec with Matchers {

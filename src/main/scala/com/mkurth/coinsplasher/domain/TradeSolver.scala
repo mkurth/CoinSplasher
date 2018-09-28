@@ -1,8 +1,8 @@
 package com.mkurth.coinsplasher.domain
 
 import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
+import com.mkurth.coinsplasher.domain.model.{CoinBalance, Share}
 import com.mkurth.coinsplasher.domain.repo.MarketCoin
-import com.mkurth.coinsplasher.{CoinBalance, Share}
 
 import scala.language.implicitConversions
 

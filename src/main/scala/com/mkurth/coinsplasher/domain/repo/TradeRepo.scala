@@ -1,6 +1,6 @@
 package com.mkurth.coinsplasher.domain.repo
 
-import com.mkurth.coinsplasher.CoinBalance
+import com.mkurth.coinsplasher.domain.model.CoinBalance
 
 import scala.concurrent.Future
 
