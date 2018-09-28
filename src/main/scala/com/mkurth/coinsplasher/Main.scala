@@ -1,8 +1,8 @@
 package com.mkurth.coinsplasher
 
-import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder, ShareCalculator, TradeSolver}
 import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol, Percent}
-import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
+import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo, TradeRepo}
+import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder, ShareCalculator, TradeSolver}
 import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
 import com.mkurth.coinsplasher.portadapter.repo.trade.Binance
 
@@ -23,10 +23,14 @@ object Main extends App {
   val tradeRepo: TradeRepo = new Binance
   val threshold = 0.10
   val blacklistedCoins = Seq("USDT")
+  val normalieCoinSymbols = Map(
+    "BCH" -> "BCC",
+    "MIOTA" -> "IOTA"
+  )
 
-  private val marketData = marketRepo.loadMarketData(blacklistedCoins)
+  private val marketData = marketRepo.loadMarketData(blacklistedCoins).map(normaliseCoinSymbols)
   val targetShares = marketData
-    .map(coins => ShareCalculator.shares(by = _.marketCap)(coins.take(30).map(_.coin), threshold))
+    .map(coins => ShareCalculator.shares(by = _.marketCap)(coins.take(20).map(_.coin), threshold))
   val actualShares = tradeRepo.currentBalance
   val trades = for {
     balance <- actualShares
@@ -41,5 +45,12 @@ object Main extends App {
     }).mkString("\n"))
     sys.exit()
   })
+
+  def normaliseCoinSymbols: Seq[MarketCoin] => Seq[MarketCoin] = {
+    marketCoins =>
+      marketCoins.map(
+        mCoin => mCoin.copy(coin = mCoin.coin.copy(coinSymbol = normalieCoinSymbols.getOrElse(mCoin.coin.coinSymbol, mCoin.coin.coinSymbol)))
+      )
+  }
 
 }
