@@ -1,46 +1,57 @@
 package com.mkurth.coinsplasher
 
+import java.io.File
+
 import com.mkurth.coinsplasher.domain._
 import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
+import com.mkurth.coinsplasher.portadapter.repo.console.ConsoleIO
 import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
 import com.mkurth.coinsplasher.portadapter.repo.trade.Binance
+import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.io.StdIn
+import scala.concurrent.ExecutionContext
+import scala.io.Source
 import scala.language.postfixOps
-import scala.util.control.NonFatal
 
-object Main extends App {
+object Main extends App with ConsoleIO {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   val marketRepo: MarketRepo = new CoinMarketCap
   val tradeRepo: TradeRepo = new Binance
-  val service = new CoinService(marketRepo, tradeRepo)
-  val trades = service.calculateOrders
-  trades.foreach(trade => {
-    println(trade.sortBy({
-      case BuyOrder(coinSymbol, amount) => amount
-      case SellOrder(coinSymbol, amount) => amount * -1
-    }).mkString("\n"))
-  })
+  val config = ConfigFactory.parseFile(new File(args.find(_.endsWith(".conf")).getOrElse("application.conf")))
+  val service = new CoinService(marketRepo, tradeRepo, config)
 
-  val x: Future[Object] = if(readBoolean("execute?")){
-    trades.map(service.executeOrders)
-  } else {
-    Future.successful("nothing to do")
-  }.recover({case NonFatal(e) =>
-    e.printStackTrace()
-    e.getMessage
-  })
-  x.onComplete(sys.exit())
-
-  def readBoolean(message: String): Boolean = {
-    StdIn.readLine(message).toLowerCase match {
-      case "y" => true
-      case "yes" => true
-      case "true" => true
-      case _ => false
-    }
+  if (args.contains("-o")) {
+    val trades = service.calculateOrders
+    trades.foreach(trade => {
+      println(trade.sortBy({
+        case BuyOrder(_, amount) => amount
+        case SellOrder(_, amount) => amount * -1
+      }).map(orderToString).mkString("\n"))
+      sys.exit()
+    })
+    trades.onComplete(sys.exit(0))
+  } else if (args.contains("-i")) {
+    val ordersFromStdin = Source.stdin
+      .getLines()
+      .map(stringToOrder)
+      .collect({
+        case Some(order) => order
+      })
+      .toSeq
+    service.executeOrders(ordersFromStdin)
+      .foreach(orders => {
+        println(orders.mkString("\n"))
+        sys.exit()
+      })
+  } else if (args.contains("-a")) {
+    service.calculateOrders
+      .flatMap(service.executeOrders)
+      .foreach(orders => {
+        println(orders.mkString("\n"))
+        sys.exit()
+      })
   }
+
 }

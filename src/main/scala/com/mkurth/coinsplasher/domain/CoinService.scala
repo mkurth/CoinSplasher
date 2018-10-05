@@ -1,7 +1,9 @@
 package com.mkurth.coinsplasher.domain
 
 import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo, TradeRepo}
+import com.typesafe.config.Config
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NormalisedCoinSymbols {
@@ -22,10 +24,10 @@ trait NormalisedCoinSymbols {
   }
 }
 
-class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo)(implicit ec: ExecutionContext) extends NormalisedCoinSymbols {
+class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo, config: Config)(implicit ec: ExecutionContext) extends NormalisedCoinSymbols {
 
-  val blacklistedCoins = Seq("USDT", "XTZ", "DOGE")
-  val ignoreBalanceForCoins = Seq("VEN", "GAS", "VTHO")
+  val blacklistedCoins: Seq[String] = config.getStringList("blacklisted.coins").asScala
+  val ignoreBalanceForCoins: Seq[String] = config.getStringList("ignore.balance.coins").asScala
 
   def calculateOrders: Future[Seq[Order]] = {
     val threshold = 0.10

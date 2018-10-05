@@ -1,7 +1,7 @@
 name := "CoinSplasher"
 version := "0.0.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.7"
 
 dependsOn(RootProject(uri("https://github.com/oyvindberg/binance-scala-api.git#master")))
 
