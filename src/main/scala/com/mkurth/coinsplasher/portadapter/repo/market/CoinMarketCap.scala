@@ -1,15 +1,12 @@
 package com.mkurth.coinsplasher.portadapter.repo.market
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import com.mkurth.coinsplasher.domain.Types.CoinSymbol
 import com.mkurth.coinsplasher.domain.model.Coin
 import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo}
+import com.softwaremill.sttp.quick._
 import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
-import play.api.libs.ws.JsonBodyReadables._
-import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 case class QuotaWithCurrency(currency: String, price: BigDecimal, market_cap: BigDecimal, volume_24h: BigDecimal)
 
@@ -46,22 +43,18 @@ class CoinMarketCap extends MarketRepo {
   final val listingURL = "https://api.coinmarketcap.com/v2/listings/"
   final val tickerURL = "https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=40"
 
-  implicit val system: ActorSystem = ActorSystem()
-  system.registerOnTermination {
-    System.exit(0)
-  }
-  implicit val ec: ExecutionContext = system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val coinFormat: OFormat[CoinInfo] = Json.format[CoinInfo]
   implicit val quotaFormat: OFormat[Quota] = Json.format[Quota]
 
-  val wsClient = StandaloneAhcWSClient()
-
   override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq()): Future[Seq[MarketCoin]] = {
-    wsClient.url(tickerURL)
-      .get()
-      .map(_.body[JsValue])
-      .map(jsonToMarketCoins(blacklisted))
+    sttp.get(uri"$tickerURL")
+        .send()
+        .body
+        .map(Json.parse)
+      .map(jsonToMarketCoins(blacklisted)) match {
+      case Left(value: String) => Future.failed(new IllegalArgumentException(value))
+      case Right(value: Seq[MarketCoin]) => Future.successful(value)
+    }
   }
 
   def jsonToMarketCoins(blacklisted: Seq[CoinSymbol]): JsValue => Seq[MarketCoin] = {
