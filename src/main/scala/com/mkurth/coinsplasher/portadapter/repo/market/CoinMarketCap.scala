@@ -39,14 +39,11 @@ object CoinInfoWithQuota {
 }
 
 class CoinMarketCap extends MarketRepo {
-
-  final val listingURL = "https://api.coinmarketcap.com/v2/listings/"
-  final val tickerURL = "https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=40"
-
   implicit val coinFormat: OFormat[CoinInfo] = Json.format[CoinInfo]
   implicit val quotaFormat: OFormat[Quota] = Json.format[Quota]
 
-  override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq()): Future[Seq[MarketCoin]] = {
+  override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq(), limitToCoins: Int = 20): Future[Seq[MarketCoin]] = {
+    val tickerURL = s"https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=${limitToCoins + 10}"
     sttp.get(uri"$tickerURL")
         .send()
         .body

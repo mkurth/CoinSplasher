@@ -29,15 +29,16 @@ class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo, config: Config)(
   val blacklistedCoins: Seq[String] = config.getStringList("blacklisted.coins").asScala
   val ignoreBalanceForCoins: Seq[String] = config.getStringList("ignore.balance.coins").asScala
   val ignoreTradesBelowWorth: BigDecimal = config.getDouble("ignore.trades.below")
+  val threshold: BigDecimal = config.getDouble("max.percent.of.share")
+  val limitToCoins: Int = config.getInt("splash.portfolio.to.number.of.coins")
 
   def calculateOrders: Future[Seq[Order]] = {
-    val threshold = 0.10
-    val marketData = marketRepo.loadMarketData(blacklistedCoins).map(normaliseCoinSymbols)
+    val marketData = marketRepo.loadMarketData(blacklistedCoins, limitToCoins).map(normaliseCoinSymbols)
     val actualShares = tradeRepo.currentBalance(ignoreBalanceForCoins)
     for {
       balance <- actualShares
       market <- marketData
-      shares = ShareCalculator.shares(by = _.marketCap)(market.take(20).map(_.coin), threshold)
+      shares = ShareCalculator.shares(by = _.marketCap)(market.take(limitToCoins).map(_.coin), threshold)
     } yield TradeSolver.solveTrades(balance, shares, market)
       .filter(_.coinSymbol != "BTC")
       .filter(order => order.worth > ignoreTradesBelowWorth)
