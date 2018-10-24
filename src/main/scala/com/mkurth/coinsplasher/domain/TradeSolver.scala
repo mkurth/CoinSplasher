@@ -9,11 +9,12 @@ import scala.language.implicitConversions
 sealed trait Order {
   val coinSymbol: CoinSymbol
   val amount: CoinShare
+  val worth: BigDecimal
 }
 
-case class SellOrder(coinSymbol: CoinSymbol, amount: CoinShare) extends Order
+case class SellOrder(coinSymbol: CoinSymbol, amount: CoinShare, worth: BigDecimal) extends Order
 
-case class BuyOrder(coinSymbol: CoinSymbol, amount: CoinShare) extends Order
+case class BuyOrder(coinSymbol: CoinSymbol, amount: CoinShare, worth: BigDecimal) extends Order
 
 object TradeSolver {
 
@@ -55,15 +56,15 @@ object TradeSolver {
       .collect({
         case (Some(targetShare: Share), Some(balance), Some(market: MarketCoin)) if targetShare.worth > market.worth(balance) =>
           val orderVolume = targetShare.worth / market.price - balance.amount
-          BuyOrder(balance.coinSymbol, orderVolume)
+          BuyOrder(balance.coinSymbol, orderVolume, targetShare.worth - market.worth(balance) )
         case (Some(targetShare: Share), Some(balance), Some(market: MarketCoin)) if targetShare.worth < market.worth(balance) =>
           val sellVolume = balance.amount - targetShare.worth / market.price
-          SellOrder(balance.coinSymbol, sellVolume)
-        case (None, Some(balance), _) =>
-          SellOrder(balance.coinSymbol, balance.amount)
+          SellOrder(balance.coinSymbol, sellVolume, market.worth(balance) - targetShare.worth)
+        case (None, Some(balance), Some(market: MarketCoin)) =>
+          SellOrder(balance.coinSymbol, balance.amount, market.worth(balance))
         case (Some(targetShare: Share), None, Some(market: MarketCoin)) =>
           val orderVolume = targetShare.worth / market.price
-          BuyOrder(targetShare.coin.coinSymbol, orderVolume)
+          BuyOrder(targetShare.coin.coinSymbol, orderVolume, targetShare.worth)
       }).toSeq
   }
 

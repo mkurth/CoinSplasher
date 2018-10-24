@@ -19,23 +19,23 @@ class TradeSolverTest extends FlatSpec with Matchers {
   )
 
   s"TradeSolver with 1000€ in LTC and only BTC target" should "place BuyOrder for BTC" in {
-    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(BuyOrder(btc.coinSymbol, 1))
+    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(BuyOrder(btc.coinSymbol, 1, 1000))
   }
 
   it should "place SellOrder for all LTC" in {
-    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(SellOrder(ltc.coinSymbol, 10))
+    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(SellOrder(ltc.coinSymbol, 10, 1000))
   }
 
   s"TradeSolver with 1000€ in LTC and 1000€ in BTC and only BTC target" should "place BuyOrder for 1 BTC" in {
-    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(BuyOrder(btc.coinSymbol, 1))
+    TradeSolver.solveTrades(`1000€ in LTC`, `only BTC target`, marketCoins) should contain(BuyOrder(btc.coinSymbol, 1, 1000))
   }
 
   s"TradeSolver with 1000€ in BTC and 50:50 BTC/LTC target" should "place SellOrder for 0.5 BTC" in {
-    TradeSolver.solveTrades(`1000€ in BTC`, `50:50 BTC/LTC target`, marketCoins) should contain(SellOrder(btc.coinSymbol, 0.5))
+    TradeSolver.solveTrades(`1000€ in BTC`, `50:50 BTC/LTC target`, marketCoins) should contain(SellOrder(btc.coinSymbol, 0.5, 500))
   }
 
   it should "place BuyOrder for 5 LTC" in {
-    TradeSolver.solveTrades(`1000€ in BTC`, `50:50 BTC/LTC target`, marketCoins) should contain(BuyOrder(ltc.coinSymbol, 5))
+    TradeSolver.solveTrades(`1000€ in BTC`, `50:50 BTC/LTC target`, marketCoins) should contain(BuyOrder(ltc.coinSymbol, 5, 500))
   }
 
 }
