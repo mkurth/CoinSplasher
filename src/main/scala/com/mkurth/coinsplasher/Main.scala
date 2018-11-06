@@ -26,8 +26,8 @@ object Main extends App with ConsoleIO {
   if (args.contains("-o")) {
     val trades = Await.result(service.calculateOrders, 10 seconds)
     println(trades.sortBy({
-      case BuyOrder(coinSymbol, amount) => amount
-      case SellOrder(coinSymbol, amount) => amount * -1
+      case BuyOrder(coinSymbol, amount, worth) => worth
+      case SellOrder(coinSymbol, amount, worth) => worth * -1
     }).map(orderToString).mkString("\n"))
     sys.exit()
   } else if (args.contains("-i")) {
