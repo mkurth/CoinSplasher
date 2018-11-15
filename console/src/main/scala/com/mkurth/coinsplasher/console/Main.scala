@@ -1,18 +1,14 @@
-package com.mkurth.coinsplasher
+package com.mkurth.coinsplasher.console
 
 import java.io.File
 
-import com.mkurth.coinsplasher.domain._
-import com.mkurth.coinsplasher.domain.repo.{MarketRepo, TradeRepo}
-import com.mkurth.coinsplasher.portadapter.repo.console.ConsoleIO
-import com.mkurth.coinsplasher.portadapter.repo.market.CoinMarketCap
-import com.mkurth.coinsplasher.portadapter.repo.trade.Binance
+import com.mkurth.coinsplasher.domain.repo.{Binance, CoinMarketCap, MarketRepo, TradeRepo}
+import com.mkurth.coinsplasher.domain.{BuyOrder, CoinService, SellOrder}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.io.Source
-import scala.language.postfixOps
 
 object Main extends App with ConsoleIO {
 

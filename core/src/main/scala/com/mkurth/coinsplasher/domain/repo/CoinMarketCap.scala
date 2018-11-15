@@ -1,8 +1,7 @@
-package com.mkurth.coinsplasher.portadapter.repo.market
+package com.mkurth.coinsplasher.domain.repo
 
-import com.mkurth.coinsplasher.domain.Types.CoinSymbol
+import com.mkurth.coinsplasher.domain.Types._
 import com.mkurth.coinsplasher.domain.model.Coin
-import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo}
 import com.softwaremill.sttp.quick._
 import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 

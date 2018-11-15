@@ -1,4 +1,4 @@
-package com.mkurth.coinsplasher.portadapter.repo.console
+package com.mkurth.coinsplasher.console
 
 import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder}
 import org.scalatest._

@@ -1,4 +1,4 @@
-package com.mkurth.coinsplasher.portadapter.repo.trade
+package com.mkurth.coinsplasher.domain.repo
 
 import com.binance.api.client.BinanceApiClientFactory
 import com.binance.api.client.domain._
@@ -7,7 +7,6 @@ import com.binance.api.client.domain.general.{ExchangeInfo, FilterType}
 import com.binance.api.client.impl.{BinanceApiAsyncRestClientImpl, BinanceApiWebSocketClientImpl}
 import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
 import com.mkurth.coinsplasher.domain.model.CoinBalance
-import com.mkurth.coinsplasher.domain.repo.TradeRepo
 import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder}
 
 import scala.concurrent.duration._

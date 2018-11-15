@@ -16,9 +16,9 @@ BINANCE_API_KEY
 
 BINANCE_SECRET
 ## print out trades
-`java -jar target/scala-2.12/CoinSplasher-assembly-0.0.1.jar -o`
+`java -jar target/scala-2.12/console-assembly-0.0.1.jar -o`
 ## execute trades from stdin
-`java -jar target/scala-2.12/CoinSplasher-assembly-0.0.1.jar -i`
+`java -jar target/scala-2.12/console-assembly-0.0.1.jar -i`
 CTRL+D to exit input mode
 ## automatic mode
-`java -jar target/scala-2.12/CoinSplasher-assembly-0.0.1.jar -a`
+`java -jar target/scala-2.12/console-assembly-0.0.1.jar -a`
