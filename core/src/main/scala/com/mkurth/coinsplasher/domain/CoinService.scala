@@ -1,9 +1,7 @@
 package com.mkurth.coinsplasher.domain
 
 import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo, TradeRepo}
-import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NormalisedCoinSymbols {
@@ -24,24 +22,26 @@ trait NormalisedCoinSymbols {
   }
 }
 
-class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo, config: Config)(implicit ec: ExecutionContext) extends NormalisedCoinSymbols {
+trait CoinServiceConfig {
+  val blacklistedCoins: Seq[String]
+  val ignoreBalanceForCoins: Seq[String]
+  val ignoreTradesBelowWorth: BigDecimal
+  val threshold: BigDecimal
+  val limitToCoins: Int
+}
 
-  val blacklistedCoins: Seq[String] = config.getStringList("blacklisted.coins").asScala
-  val ignoreBalanceForCoins: Seq[String] = config.getStringList("ignore.balance.coins").asScala
-  val ignoreTradesBelowWorth: BigDecimal = config.getDouble("ignore.trades.below")
-  val threshold: BigDecimal = config.getDouble("max.percent.of.share")
-  val limitToCoins: Int = config.getInt("splash.portfolio.to.number.of.coins")
+class CoinService(marketRepo: MarketRepo, tradeRepo: TradeRepo, config: CoinServiceConfig)(implicit ec: ExecutionContext) extends NormalisedCoinSymbols {
 
   def calculateOrders: Future[Seq[Order]] = {
-    val marketData = marketRepo.loadMarketData(blacklistedCoins, limitToCoins).map(normaliseCoinSymbols)
-    val actualShares = tradeRepo.currentBalance(ignoreBalanceForCoins)
+    val marketData = marketRepo.loadMarketData(config.blacklistedCoins, config.limitToCoins).map(normaliseCoinSymbols)
+    val actualShares = tradeRepo.currentBalance(config.ignoreBalanceForCoins)
     for {
       balance <- actualShares
       market <- marketData
-      shares = ShareCalculator.shares(by = _.marketCap)(market.take(limitToCoins).map(_.coin), threshold)
+      shares = ShareCalculator.shares(by = _.marketCap)(market.take(config.limitToCoins).map(_.coin), config.threshold)
     } yield TradeSolver.solveTrades(balance, shares, market)
       .filter(_.coinSymbol != "BTC")
-      .filter(order => order.worth > ignoreTradesBelowWorth)
+      .filter(order => order.worth > config.ignoreTradesBelowWorth)
   }
 
   def executeOrders(orders: Seq[Order]): Future[Seq[Any]] = {

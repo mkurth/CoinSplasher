@@ -5,7 +5,7 @@ import com.mkurth.coinsplasher.domain.model.Coin
 import com.softwaremill.sttp.quick._
 import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class QuotaWithCurrency(currency: String, price: BigDecimal, market_cap: BigDecimal, volume_24h: BigDecimal)
 
@@ -37,20 +37,20 @@ object CoinInfoWithQuota {
       quotes = quotes)
 }
 
-class CoinMarketCap extends MarketRepo {
+class CoinMarketCap(implicit val ex: ExecutionContext) extends MarketRepo {
   implicit val coinFormat: OFormat[CoinInfo] = Json.format[CoinInfo]
   implicit val quotaFormat: OFormat[Quota] = Json.format[Quota]
 
   override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq(), limitToCoins: Int = 20): Future[Seq[MarketCoin]] = {
     val tickerURL = s"https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=${limitToCoins + 10}"
     sttp.get(uri"$tickerURL")
-        .send()
-        .body
-        .map(Json.parse)
-      .map(jsonToMarketCoins(blacklisted)) match {
-      case Left(value: String) => Future.failed(new IllegalArgumentException(value))
-      case Right(value: Seq[MarketCoin]) => Future.successful(value)
-    }
+        .send().map(_.body
+            .map(Json.parse)
+          .map(jsonToMarketCoins(blacklisted)) match {
+          case Left(value: String) => throw new IllegalArgumentException(value)
+          case Right(value: Seq[MarketCoin]) => value
+        }
+      )
   }
 
   def jsonToMarketCoins(blacklisted: Seq[CoinSymbol]): JsValue => Seq[MarketCoin] = {

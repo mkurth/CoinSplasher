@@ -3,9 +3,10 @@ package com.mkurth.coinsplasher.console
 import java.io.File
 
 import com.mkurth.coinsplasher.domain.repo.{Binance, CoinMarketCap, MarketRepo, TradeRepo}
-import com.mkurth.coinsplasher.domain.{BuyOrder, CoinService, SellOrder}
+import com.mkurth.coinsplasher.domain.{BuyOrder, CoinService, CoinServiceConfig, SellOrder}
 import com.typesafe.config.ConfigFactory
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.io.Source
@@ -17,7 +18,14 @@ object Main extends App with ConsoleIO {
   val marketRepo: MarketRepo = new CoinMarketCap
   val tradeRepo: TradeRepo = new Binance
   val config = ConfigFactory.parseFile(new File(args.find(_.endsWith(".conf")).getOrElse("application.conf")))
-  val service = new CoinService(marketRepo, tradeRepo, config)
+  val serviceConfig = new CoinServiceConfig {
+    override val blacklistedCoins: Seq[String] = config.getStringList("blacklisted.coins").asScala
+    override val ignoreBalanceForCoins: Seq[String] = config.getStringList("ignore.balance.coins").asScala
+    override val ignoreTradesBelowWorth: BigDecimal = config.getDouble("ignore.trades.below")
+    override val threshold: BigDecimal = config.getDouble("max.percent.of.share")
+    override val limitToCoins: Int = config.getInt("splash.portfolio.to.number.of.coins")
+  }
+  val service = new CoinService(marketRepo, tradeRepo, serviceConfig)
 
   if (args.contains("-o")) {
     val trades = Await.result(service.calculateOrders, 10 seconds)
