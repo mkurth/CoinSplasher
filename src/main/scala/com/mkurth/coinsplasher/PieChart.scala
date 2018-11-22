@@ -1,12 +1,9 @@
 
 package com.mkurth.coinsplasher
 
-import java.math
-
-import slinky.core.{StatelessComponent, Tag, WithAttrs}
+import slinky.core.StatelessComponent
 import slinky.core.annotations.react
 import slinky.core.facade.ReactElement
-import slinky.web.html.className
 import slinky.web.svg._
 
 import scala.annotation.tailrec
@@ -62,7 +59,7 @@ case class Slice(title: String, color: String, value: BigDecimal)
           val (startX, startY) = getCoordinatesForPercent(cumulativePercent)
           val (endX, endY) = getCoordinatesForPercent(cumulativePercent + valuePercentage)
           val pathData = getPathData(startX, startY, longArc, endX, endY)
-          val p: ReactElement = path(d := pathData, fill := head.color, id := head.title)
+          val p: ReactElement = path(d := pathData, fill := head.color, id := head.title, key := head.title)
         drawSlice(total, tail, paths.::(p))(cumulativePercent + valuePercentage)
     }
   }

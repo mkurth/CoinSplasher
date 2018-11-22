@@ -11,6 +11,7 @@ val commonSettings = Seq(
   libraryDependencies += "com.typesafe.play" %%% "play-json" % "2.6.10",
   libraryDependencies += "com.softwaremill.sttp" %%% "core" % "1.3.5",
   libraryDependencies += "com.typesafe" % "config" % "1.3.3",
+  libraryDependencies += "com.mkurth" %%% "scala-binance-client" % "0.1.0-SNAPSHOT",
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.5" % Test,
   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
 )
@@ -40,7 +41,7 @@ scalacOptions += "-P:scalajs:sjsDefinedByDefault"
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
 version in webpack := "4.21.0"
-version in startWebpackDevServer:= "3.1.9"
+version in startWebpackDevServer := "3.1.9"
 
 webpackResources := baseDirectory.value / "webpack" * "*"
 
@@ -51,7 +52,7 @@ webpackConfigFile in Test := Some(baseDirectory.value / "webpack" / "webpack-cor
 webpackDevServerExtraArgs in fastOptJS := Seq("--inline", "--hot")
 webpackBundlingMode in fastOptJS := BundlingMode.LibraryOnly()
 
-requiresDOM in Test := true
+jsEnv in Test := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 
 addCommandAlias("dev", ";fastOptJS::startWebpackDevServer;~fastOptJS")
 

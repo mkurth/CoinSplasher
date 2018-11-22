@@ -44,23 +44,24 @@ class CoinMarketCap(implicit val ex: ExecutionContext) extends MarketRepo {
   override def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq(), limitToCoins: Int = 20): Future[Seq[MarketCoin]] = {
     val tickerURL = s"https://api.coinmarketcap.com/v2/ticker/?convert=EUR&limit=${limitToCoins + blacklisted.length}"
     sttp.get(uri"$tickerURL")
-        .send().map(_.body
-            .map(Json.parse)
-          .map(jsonToMarketCoins(blacklisted)) match {
-          case Left(value: String) => throw new IllegalArgumentException(value)
-          case Right(value: Seq[MarketCoin]) => value.take(limitToCoins)
-        }
+      .send()
+      .map(_.body
+        .map(Json.parse)
+        .map(jsonToMarketCoins(blacklisted)) match {
+        case Left(value: String) => throw new IllegalArgumentException(value)
+        case Right(value: Seq[MarketCoin]) => value.take(limitToCoins)
+      }
       )
   }
 
   def jsonToMarketCoins(blacklisted: Seq[CoinSymbol]): JsValue => Seq[MarketCoin] = {
     json => {
       (json \ "data").validate[JsObject].get
-      .fields.map({ case (key, value) => value.validate[CoinInfo].get })
-      .filter(coinInfo => !blacklisted.contains(coinInfo.symbol))
-      .map(toCoinInfoWithQuota)
-      .sortBy(_.rank).map(cwq => {
-      val coin = cwq.toCoin
+        .fields.map({ case (key, value) => value.validate[CoinInfo].get })
+        .filter(coinInfo => !blacklisted.contains(coinInfo.symbol))
+        .map(toCoinInfoWithQuota)
+        .sortBy(_.rank).map(cwq => {
+        val coin = cwq.toCoin
         MarketCoin(coin, cwq.quotes.find(_.currency == "EUR").get.price)
       })
     }
