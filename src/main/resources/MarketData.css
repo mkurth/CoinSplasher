@@ -6,7 +6,7 @@
 .slider {
     -webkit-appearance: none;  /* Override default CSS styles */
     appearance: none;
-    width: 99%; /* Full-width */
+    width: 80%; /* Full-width */
     height: 15px;
     border-radius: 5px;
     background: #d3d3d3; /* Grey background */
@@ -46,10 +46,15 @@
 
 .market-pie-chart {
     float: left;
-    width: 80%;
+    width: 50%;
+    height: 50%;
 }
 
 .legend-item {
     list-style-type: none;
     display: -webkit-box;
+}
+
+.market-data {
+    max-width: 50%;
 }
