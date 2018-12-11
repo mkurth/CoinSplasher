@@ -21,8 +21,6 @@ object MarketDataCSS extends js.Object
 
 @react class MarketData extends Component {
 
-  private val css = MarketDataCSS
-
   val limitCoinRef: ReactRef[Element] = React.createRef[Element]
   val maxShareRef: ReactRef[Element] = React.createRef[Element]
   val blacklistedCoinsRef: ReactRef[Element] = React.createRef[Element]
@@ -47,15 +45,12 @@ object MarketDataCSS extends js.Object
           `type` := "range",
           ref := limitCoinRef,
           min := "2", max := "100", value := state.limit.toString,
-          id := "limitCoins", className := "slider",
-          name := "limitCoins",
+          className := "slider",
           onChange := updateLimit()
         ),
         input(
           `type` := "number",
           min := "2", max := "100", value := state.limit.toString,
-          id := "limitCoinsN",
-          name := "limitCoinsN",
           readOnly := true,
           onChange := updateLimit()
         ),
@@ -64,15 +59,12 @@ object MarketDataCSS extends js.Object
           `type` := "range",
           ref := maxShareRef,
           min := (100 / state.limit).toString, max := "100", value := state.maxShareInPercent.toString,
-          id := "maxShare", className := "slider",
-          name := "maxShare",
+          className := "slider",
           onChange := updateShare()
         ),
         input(
           `type` := "number",
           min := (100 / state.limit).toString, max := "100", value := state.maxShareInPercent.toString,
-          id := "maxShareN",
-          name := "maxShareN",
           readOnly := true,
           onChange := updateShare()
         )
@@ -83,13 +75,17 @@ object MarketDataCSS extends js.Object
         div(state.blacklistedCoins.mkString(","))
       ),
       div(ref := marketDataRef)(
-        PieChartWithLegend(getSharesWithIndex)
+        PieChartWithLegend(getShares)
       )
     )
   }
 
-  private def getSharesWithIndex: Seq[(Share, Int)] = {
-    ShareCalculator.shares(_.marketCap)(state.coins.filterNot(c => state.blacklistedCoins.contains(c.coin.coinSymbol)).take(state.limit).map(_.coin), BigDecimal(state.maxShareInPercent) / 100).zipWithIndex
+  private def getShares: Seq[Share] = {
+    ShareCalculator.shares(_.marketCap)(
+      state.coins.filterNot(c => state.blacklistedCoins.contains(c.coin.coinSymbol))
+        .take(state.limit)
+        .map(_.coin), BigDecimal(state.maxShareInPercent) / 100
+    )
   }
 
   private def refreshCoins(): Event => Unit = {
@@ -114,78 +110,4 @@ object MarketDataCSS extends js.Object
       setState(_.copy(blacklistedCoins = coinToBlacklist))
     }
   }
-}
-
-object MarketData {
-  val colors = Seq(
-    "Aquamarine",
-    "Turquoise",
-    "MediumTurquoise",
-    "DarkTurquoise",
-    "CadetBlue",
-    "SteelBlue",
-    "LightSteelBlue",
-    "PowderBlue",
-    "LightBlue",
-    "SkyBlue",
-    "LightSkyBlue",
-    "DeepSkyBlue",
-    "DodgerBlue",
-    "CornflowerBlue",
-    "RoyalBlue",
-    "Blue",
-    "MediumBlue",
-    "DarkBlue",
-    "Navy",
-    "MidnightBlue",
-    "Gold",
-    "Yellow",
-    "LightYellow",
-    "LemonChiffon",
-    "LightGoldenrodYellow",
-    "PapayaWhip",
-    "Moccasin",
-    "PeachPuff",
-    "PaleGoldenrod",
-    "Khaki",
-    "DarkKhaki",
-    "BurlyWood",
-    "GreenYellow",
-    "Chartreuse",
-    "LawnGreen",
-    "Lime",
-    "LimeGreen",
-    "PaleGreen",
-    "LightGreen",
-    "MediumSpringGreen",
-    "SpringGreen",
-    "MediumSeaGreen",
-    "SeaGreen",
-    "ForestGreen",
-    "Green",
-    "DarkGreen",
-    "YellowGreen",
-    "OliveDrab",
-    "Olive",
-    "DarkOliveGreen",
-    "MediumAquamarine",
-    "DarkSeaGreen",
-    "LightSeaGreen",
-    "DarkCyan",
-    "Teal",
-    "Blues/Cyans",
-    "Aqua",
-    "Cyan",
-    "LightCyan",
-    "PaleTurquoise",
-    "Tan",
-    "RosyBrown",
-    "SandyBrown",
-    "Goldenrod",
-    "DarkGoldenrod",
-    "Peru",
-    "Chocolate",
-    "SaddleBrown",
-    "Sienna",
-    "Brown")
 }

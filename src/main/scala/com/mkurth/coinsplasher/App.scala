@@ -20,12 +20,10 @@ object AppCSS extends js.Object
 object ReactLogo extends js.Object
 
 @react class App extends Component {
-  private val css = AppCSS
   implicit val ec: ExecutionContext = ExecutionContext.global
   type Props = Unit
 
-  case class State(key: String, secret: String, tradeRepo: TradeRepo) {
-  }
+  case class State(key: String, secret: String, tradeRepo: TradeRepo)
 
   override def initialState: State = State("", "", new BinanceTradeRepo("", "")(ExecutionContext.global))
 
@@ -61,16 +59,14 @@ object ReactLogo extends js.Object
   private def updateSecret: Event => Unit = {
     event =>
       val secret = event.target.asInstanceOf[HTMLInputElement].value
-      setState(
-      state.copy(secret = secret, tradeRepo = new BinanceTradeRepo(state.key, secret)(ExecutionContext.global))
+      setState(_.copy(secret = secret, tradeRepo = new BinanceTradeRepo(state.key, secret)(ExecutionContext.global))
     )
   }
 
   private def updateKey: Event => Unit = {
     event =>
       val key = event.target.asInstanceOf[HTMLInputElement].value
-      setState(
-      state.copy(key = key, tradeRepo = new BinanceTradeRepo(key, state.secret)(ExecutionContext.global))
+      setState(_.copy(key = key, tradeRepo = new BinanceTradeRepo(key, state.secret)(ExecutionContext.global))
     )
   }
 }

@@ -23,9 +23,11 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
   case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[MarketData])
 
   case class State(currentBalance: Seq[Balance], ignoreCoins: Seq[String], error: Option[String]) {
-    def asShare: Seq[(Share, Int)] = {
+    def asShare: Seq[Share] = {
       val sum = currentBalance.map(b => b.value * b.amount).sum
-      currentBalance.map(balance => Share(Coin(balance.coin, 0, 0), balance.amount * balance.value / sum)).sortBy(_.share * -1).zipWithIndex
+      currentBalance.map(balance => Share(Coin(balance.coin, 0, 0), balance.amount * balance.value / sum))
+        .filter(_.share > 0.001)
+        .sortBy(_.share * -1)
     }
   }
 
