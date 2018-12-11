@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class BinanceTradeRepo(apiKey: String, apiSecret: String)(implicit val ex: ExecutionContext) extends TradeRepo {
 
   val auth = BinanceAuth(apiKey, apiSecret)
-  val client = new BinanceClient(auth)
+  val client = new BinanceClient(auth, Some("http://localhost:9090"))
 
   override def currentBalance(ignoreCoins: Seq[CoinSymbol]): Future[Seq[CoinBalance]] = {
     client.account.map(accountInfo => {

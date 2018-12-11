@@ -1,21 +1,30 @@
 .App {
     text-align: center;
-}
-
-.App-logo {
-    animation: App-logo-spin infinite 20s linear;
-    height: 80px;
+    display: grid;
+    grid-template-columns: auto auto;
 }
 
 .App-header {
     background-color: #222;
-    height: 150px;
+    height: 70px;
     padding: 20px;
     color: white;
+    grid-column: 1 / span 2;
 }
 
 .App-title {
     font-size: 1.5em;
+}
+
+.API-Keys {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: 20% 80%;
+}
+
+.api-input {
+    min-width: 12em;
+    width: auto;
 }
 
 .App-intro {

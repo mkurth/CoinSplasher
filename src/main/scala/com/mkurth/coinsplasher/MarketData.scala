@@ -10,10 +10,8 @@ import slinky.core._
 import slinky.core.annotations.react
 import slinky.core.facade.{React, ReactElement, ReactRef}
 import slinky.web.html._
-import slinky.web.svg.{fill, height, svg, width}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.math.BigDecimal.RoundingMode
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 
@@ -85,22 +83,7 @@ object MarketDataCSS extends js.Object
         div(state.blacklistedCoins.mkString(","))
       ),
       div(ref := marketDataRef)(
-        ul(id := "market-legend", className := "market-legend")(
-          getSharesWithIndex.map({ case (share, idx) =>
-            li(key := share.coin.coinSymbol, className := "legend-item")(
-              svg(width := "20", height := "20")(
-                rect(width := "20", height := "20", fill := MarketData.colors(idx))
-              ),
-              " " + share.coin.coinSymbol,
-              s" ${(share.share * 100).setScale(2, RoundingMode.HALF_DOWN)}%"
-            )
-          })
-        ),
-        div(className := "market-pie-chart")(
-          PieChart(slices = getSharesWithIndex.map({ case (share, idx) =>
-            Slice(share.coin.coinSymbol, MarketData.colors(idx), share.share)
-          }))
-        )
+        PieChartWithLegend(getSharesWithIndex)
       )
     )
   }

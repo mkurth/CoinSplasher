@@ -1,33 +1,55 @@
 package com.mkurth.coinsplasher
 
-import com.mkurth.coinsplasher.domain.model.CoinBalance
+import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
+import com.mkurth.coinsplasher.domain.model.{Coin, Share}
 import com.mkurth.coinsplasher.domain.repo.TradeRepo
 import slinky.core.Component
 import slinky.core.annotations.react
-import slinky.core.facade.ReactElement
+import slinky.core.facade.{ReactElement, ReactRef}
 import slinky.web.html._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js
+import scala.scalajs.js.annotation.JSImport
+
+@JSImport("resources/CurrentBalance.css", JSImport.Default)
+@js.native
+object CurrentBalanceCSS extends js.Object
+
+case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 
 @react class CurrentBalance extends Component {
 
-  case class Props(repo: TradeRepo)
+  case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[MarketData])
 
-  case class State(currentBalance: Seq[CoinBalance], ignoreCoins: Seq[String])
+  case class State(currentBalance: Seq[Balance], ignoreCoins: Seq[String], error: Option[String]) {
+    def asShare: Seq[(Share, Int)] = {
+      val sum = currentBalance.map(b => b.value * b.amount).sum
+      currentBalance.map(balance => Share(Coin(balance.coin, 0, 0), balance.amount * balance.value / sum)).sortBy(_.share * -1).zipWithIndex
+    }
+  }
 
   override def initialState: State = {
-    props.repo.currentBalance(Seq()).foreach(balance => setState(state.copy(currentBalance = balance)))
-    State(Seq(), Seq())
+    updateBalance()
+    State(Seq(), Seq(), None)
+  }
+
+  private def updateBalance(): Unit = {
+    props.tradeRepo.currentBalance(Seq()).foreach(b => {
+      val mc = props.marketRepo.current.state.coins.map(mc => mc.coin.coinSymbol -> mc.price).toMap
+      val balances = b.filter(_.amount > 0).map(cb => Balance(cb.coinSymbol, cb.amount, mc.getOrElse(cb.coinSymbol, 0)))
+      setState(_.copy(currentBalance = balances, error = None))
+    })
   }
 
   override def render(): ReactElement = {
-    div(h1("Your current Balance"),
+    div(className := "balance")(h1("Your current Balance"),
+      button(onClick := (_ => updateBalance()))("refresh"),
+      div(state.error.getOrElse("")),
       div(className := "slidecontainer")(
         div(className := "market-pie-chart")(
-          if(state.currentBalance.nonEmpty){
-            PieChart(slices = state.currentBalance.zipWithIndex.map({ case (balance, idx) =>
-              Slice(balance.coinSymbol, MarketData.colors(idx), balance.amount)
-            }))
+          if (state.currentBalance.nonEmpty) {
+            PieChartWithLegend(state.asShare)
           } else {
             div("please provide api credentials")
           }
