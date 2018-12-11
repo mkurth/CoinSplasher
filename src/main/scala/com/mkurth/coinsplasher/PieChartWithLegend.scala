@@ -12,7 +12,9 @@ import slinky.web.svg.{fill, svg}
 import scala.math.BigDecimal.RoundingMode
 
 @react class PieChartWithLegend extends StatelessComponent {
+
   case class Props(shares: Seq[Share])
+
   type Snapshot = Unit
 
   import PieChartWithLegend.colors
@@ -65,18 +67,6 @@ object PieChartWithLegend {
     "DarkBlue",
     "Navy",
     "MidnightBlue",
-    "Gold",
-    "Yellow",
-    "LightYellow",
-    "LemonChiffon",
-    "LightGoldenrodYellow",
-    "PapayaWhip",
-    "Moccasin",
-    "PeachPuff",
-    "PaleGoldenrod",
-    "Khaki",
-    "DarkKhaki",
-    "BurlyWood",
     "GreenYellow",
     "Chartreuse",
     "LawnGreen",
@@ -111,8 +101,5 @@ object PieChartWithLegend {
     "Goldenrod",
     "DarkGoldenrod",
     "Peru",
-    "Chocolate",
-    "SaddleBrown",
-    "Sienna",
-    "Brown")
+    "DarkGreen")
 }

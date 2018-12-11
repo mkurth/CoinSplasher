@@ -30,6 +30,8 @@ object ReactLogo extends js.Object
   val marketRepo: MarketRepo = new CoinMarketCap
   val marketDataRef: ReactRef[MarketData] = React.createRef[MarketData]
 
+  private val css = AppCSS
+
   def render(): ReactElement = {
     div(className := "App")(
       header(className := "App-header")(

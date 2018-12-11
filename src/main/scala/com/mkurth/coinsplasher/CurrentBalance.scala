@@ -20,6 +20,7 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 
 @react class CurrentBalance extends Component {
 
+  private val css = CurrentBalanceCSS
   case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[MarketData])
 
   case class State(currentBalance: Seq[Balance], ignoreCoins: Seq[String], error: Option[String]) {

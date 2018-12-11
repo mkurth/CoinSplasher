@@ -28,6 +28,8 @@ object MarketDataCSS extends js.Object
 
   case class Props(repo: MarketRepo)
 
+  private val css = MarketDataCSS
+
   case class State(coins: Seq[MarketCoin],
                    blacklistedCoins: Seq[CoinSymbol] = Seq(),
                    limit: Int = 20,
