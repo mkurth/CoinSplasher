@@ -1,7 +1,10 @@
 # CoinSplasher
 
 ## how to run
+we need a proxy, because modern browsers like chromium will block direct calls against binance.com
 ### local
+docker run --name my-custom-nginx-proxy -v $(pwd)/nginx.conf:/etc/nginx/nginx.conf:ro -p 9090:80 nginx
+
 `sbt dev`
 goto http://localhost:8080
 
