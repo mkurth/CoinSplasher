@@ -32,8 +32,8 @@ npmDevDependencies in Compile += "html-webpack-plugin" -> "3.2.0"
 npmDevDependencies in Compile += "copy-webpack-plugin" -> "4.5.4"
 npmDevDependencies in Compile += "webpack-merge" -> "4.1.4"
 
-libraryDependencies += "me.shadaj" %%% "slinky-web" % "0.5.1"
-libraryDependencies += "me.shadaj" %%% "slinky-hot" % "0.5.1"
+libraryDependencies += "me.shadaj" %%% "slinky-web" % "0.5.2"
+libraryDependencies += "me.shadaj" %%% "slinky-hot" % "0.5.2"
 
 libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.5" % Test
 

@@ -7,16 +7,17 @@ import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class BinanceTradeRepo(apiKey: String, apiSecret: String)(implicit val ex: ExecutionContext) extends TradeRepo {
+class BinanceTradeRepo(apiKey: () => String, apiSecret: () => String)(implicit val ex: ExecutionContext) extends TradeRepo {
 
-  val auth = BinanceAuth(apiKey, apiSecret)
-  val client = new BinanceClient(auth, Some("http://localhost:9090"))
+  def auth = BinanceAuth(apiKey(), apiSecret())
+  def client = new BinanceClient(auth, Some("http://localhost:9090"))
 
   override def currentBalance(ignoreCoins: Seq[CoinSymbol]): Future[Seq[CoinBalance]] = {
-    client.account.map(accountInfo => {
-      accountInfo.balances.map(balance =>
-        CoinBalance(balance.asset, BigDecimal(balance.free))
-      )
+    client.account.map({
+      case Right(accountInfo) =>
+        accountInfo.balances.map(balance =>
+          CoinBalance(balance.asset, BigDecimal(balance.free))
+        )
     })
   }
 

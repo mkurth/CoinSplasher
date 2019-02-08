@@ -21,7 +21,7 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 @react class CurrentBalance extends Component {
 
   private val css = CurrentBalanceCSS
-  case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[MarketData])
+  case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[TargetShare], updateCallback: Seq[Balance] => Unit)
 
   case class State(currentBalance: Seq[Balance], ignoreCoins: Seq[String], error: Option[String]) {
     def asShare: Seq[Share] = {
@@ -32,6 +32,13 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
     }
   }
 
+  override def componentDidUpdate(prevProps: Props, prevState: State): Unit = {
+    if(prevState != state) {
+      props.updateCallback(state.currentBalance)
+    }
+    super.componentDidUpdate(prevProps, prevState)
+  }
+
   override def initialState: State = {
     updateBalance()
     State(Seq(), Seq(), None)
@@ -39,8 +46,8 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 
   private def updateBalance(): Unit = {
     props.tradeRepo.currentBalance(Seq()).foreach(b => {
-      val mc = props.marketRepo.current.state.coins.map(mc => mc.coin.coinSymbol -> mc.price).toMap
-      val balances = b.filter(_.amount > 0).map(cb => Balance(cb.coinSymbol, cb.amount, mc.getOrElse(cb.coinSymbol, 0)))
+      val mc = props.marketRepo.current.state.marketCoins.map(mc => mc.coin.coinSymbol -> mc.price).toMap
+      val balances = b.filter(_.amount > 0).map(cb => Balance(cb.coinSymbol, cb.amount, cb.amount * mc.getOrElse(cb.coinSymbol, 0)))
       setState(_.copy(currentBalance = balances, error = None))
     })
   }

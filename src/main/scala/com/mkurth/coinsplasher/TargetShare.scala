@@ -19,23 +19,41 @@ import scala.scalajs.js.annotation.JSImport
 @js.native
 object MarketDataCSS extends js.Object
 
-@react class MarketData extends Component {
+@react class TargetShare extends Component {
 
   val limitCoinRef: ReactRef[Element] = React.createRef[Element]
   val maxShareRef: ReactRef[Element] = React.createRef[Element]
   val blacklistedCoinsRef: ReactRef[Element] = React.createRef[Element]
   val marketDataRef: ReactRef[Element] = React.createRef[Element]
 
-  case class Props(repo: MarketRepo)
+  case class Props(repo: MarketRepo, updatedMarketCoins: Seq[MarketCoin] => Unit, updatedShare: Seq[Share] => Unit)
 
   private val css = MarketDataCSS
 
-  case class State(coins: Seq[MarketCoin],
+  case class State(marketCoins: Seq[MarketCoin],
                    blacklistedCoins: Seq[CoinSymbol] = Seq(),
                    limit: Int = 20,
-                   maxShareInPercent: Int = 20)
+                   maxShareInPercent: Int = 20) {
+    def getShares: Seq[Share] = {
+      ShareCalculator.shares(_.marketCap)(
+          marketCoins.filterNot(c => blacklistedCoins.contains(c.coin.coinSymbol))
+          .take(limit)
+          .map(_.coin), BigDecimal(maxShareInPercent) / 100
+      )
+    }
+  }
 
-  props.repo.loadMarketData(state.blacklistedCoins, 150).map(market => setState(s = state.copy(coins = market)))
+  override def componentDidUpdate(prevProps: Props, prevState: State): Unit = {
+    if(prevState.marketCoins != state.marketCoins) {
+      props.updatedMarketCoins(state.marketCoins)
+    }
+    if(prevState.getShares != state.getShares){
+      props.updatedShare(state.getShares)
+    }
+    super.componentDidUpdate(prevProps, prevState)
+  }
+
+  props.repo.loadMarketData(state.blacklistedCoins, 150).map(market => setState(s = state.copy(marketCoins = market)))
 
   override def initialState: State = State(Seq())
 
@@ -77,21 +95,9 @@ object MarketDataCSS extends js.Object
         div(state.blacklistedCoins.mkString(","))
       ),
       div(ref := marketDataRef)(
-        PieChartWithLegend(getShares)
+        PieChartWithLegend(state.getShares)
       )
     )
-  }
-
-  private def getShares: Seq[Share] = {
-    ShareCalculator.shares(_.marketCap)(
-      state.coins.filterNot(c => state.blacklistedCoins.contains(c.coin.coinSymbol))
-        .take(state.limit)
-        .map(_.coin), BigDecimal(state.maxShareInPercent) / 100
-    )
-  }
-
-  private def refreshCoins(): Event => Unit = {
-    _ => props.repo.loadMarketData(state.blacklistedCoins, 200).map(x => setState(s = state.copy(coins = x)))
   }
 
   private def updateLimit(): Event => Unit = {

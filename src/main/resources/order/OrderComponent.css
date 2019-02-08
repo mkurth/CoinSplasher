@@ -1,0 +1,4 @@
+.Order-Item {
+    display: grid;
+    grid-template-columns: auto auto auto auto;
+}
