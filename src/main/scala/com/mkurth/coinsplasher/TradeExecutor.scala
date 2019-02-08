@@ -7,7 +7,7 @@ import com.mkurth.coinsplasher.domain.repo.TradeRepo
 import slinky.core.Component
 import slinky.core.annotations.react
 import slinky.core.facade.{ReactElement, ReactRef}
-import slinky.web.html.{className, div}
+import slinky.web.html.{className, div, h1}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
@@ -28,16 +28,18 @@ class TradeExecutor extends Component {
                    marketRef: ReactRef[TargetShare])
 
   override def render(): ReactElement = {
-    div(className := "planned-trades")(
-      TradeSolver.solveTrades(
-        props.currentBalance.map(b => CoinBalance(b.coin, b.amount)),
-        props.targetShare,
-        Try(props.marketRef.current.state.marketCoins).getOrElse(Seq())
-      ).filter(_.worth > 1).sortBy({
-        case SellOrder(_, _, worth) => -1 * worth
-        case BuyOrder(_, _, worth) => worth
-      }).map(order => div(elems = OrderComponent(order)))
-    )
+    div(
+      h1("Suggested Trades"),
+      div(className := "planned-trades")(
+        TradeSolver.solveTrades(
+          props.currentBalance.map(b => CoinBalance(b.coin, b.amount)),
+          props.targetShare,
+          Try(props.marketRef.current.state.marketCoins).getOrElse(Seq())
+        ).filter(_.worth > 1).sortBy({
+          case SellOrder(_, _, worth) => -1 * worth
+          case BuyOrder(_, _, worth) => worth
+        }).map(order => OrderComponent(order))
+      ))
   }
 
   type State = Unit

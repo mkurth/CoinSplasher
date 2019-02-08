@@ -1,3 +1,5 @@
 .planned-trades {
-
+    display: grid;
+    grid-template-columns: auto auto auto auto;
+    text-align: right;
 }

@@ -22,8 +22,7 @@ class OrderComponent extends StatelessComponent {
   private val css = OrderComponentCSS
 
   override def render(): ReactElement = {
-    div(className := "Order-Item")(
-      div(props.order match {
+     Seq(div(props.order match {
         case SellOrder(coinSymbol, amount, worth) => "sell"
         case BuyOrder(coinSymbol, amount, worth) => "buy"
       }),
