@@ -23,8 +23,8 @@ class TradeExecutor extends Component {
   private val css = TradeExecutorCSS
 
   case class Props(tradeRepo: TradeRepo,
-                   targetShare: Seq[Share] = Seq(),
-                   currentBalance: Seq[Balance] = Seq(),
+                   targetShare: List[Share] = List(),
+                   currentBalance: List[Balance] = List(),
                    marketRef: ReactRef[TargetShare])
 
   override def render(): ReactElement = {
@@ -34,7 +34,7 @@ class TradeExecutor extends Component {
         TradeSolver.solveTrades(
           props.currentBalance.map(b => CoinBalance(b.coin, b.amount)),
           props.targetShare,
-          Try(props.marketRef.current.state.marketCoins).getOrElse(Seq())
+          Try(props.marketRef.current.state.marketCoins).getOrElse(List())
         ).filter(_.worth > 1).sortBy({
           case SellOrder(_, _, worth) => -1 * worth
           case BuyOrder(_, _, worth) => worth

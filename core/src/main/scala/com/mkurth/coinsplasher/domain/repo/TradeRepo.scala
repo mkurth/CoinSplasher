@@ -8,7 +8,7 @@ import scala.concurrent.Future
 
 trait TradeRepo {
 
-  def currentBalance(ignoreCoins: Seq[CoinSymbol]): Future[Seq[CoinBalance]]
+  def currentBalance(ignoreCoins: List[CoinSymbol]): Future[List[CoinBalance]]
 
   def sell(order: SellOrder): Future[Any]
 

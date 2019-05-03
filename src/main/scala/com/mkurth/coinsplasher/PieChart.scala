@@ -12,9 +12,9 @@ case class Slice(title: String, color: String, value: BigDecimal)
 
 @react class PieChart extends StatelessComponent {
 
-  case class Props(slices: Seq[Slice])
+  case class Props(slices: List[Slice])
 
-  def renderPaths(slices: Seq[Slice]): ReactElement = {
+  def renderPaths(slices: List[Slice]): ReactElement = {
     val total: BigDecimal = slices.map(_.value).sum
     slices.toList match {
       case head :: Nil => circle(
@@ -50,7 +50,7 @@ case class Slice(title: String, color: String, value: BigDecimal)
 
   @tailrec
   final def drawSlice(total: BigDecimal, slices: List[Slice], paths: List[ReactElement] = List())
-               (cumulativePercent: BigDecimal = 0): Seq[ReactElement] = {
+               (cumulativePercent: BigDecimal = 0): List[ReactElement] = {
     slices match {
       case Nil => paths
       case head :: tail =>

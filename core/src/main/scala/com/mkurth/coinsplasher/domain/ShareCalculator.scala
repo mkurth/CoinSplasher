@@ -13,7 +13,7 @@ object ShareCalculator {
     * @param maxShareInPercent percentage cap for a single coin
     * @return percentage of each coin
     */
-  def shares(by: Coin => BigDecimal)(data: Seq[Coin], maxShareInPercent: Percent): Seq[Share] = {
+  def shares(by: Coin => BigDecimal)(data: List[Coin], maxShareInPercent: Percent): List[Share] = {
     val totalCap = data.map(by).sum
     val shares = data.map(coin => Share(coin, by(coin) / totalCap))
     val (sharesOverThreshold, sharesBeneathThreshold) = shares.partition(_.share >= maxShareInPercent)
@@ -26,7 +26,7 @@ object ShareCalculator {
   /**
     * recursive function to cap remaining coins
     */
-  private def capRemainingShares(by: Coin => BigDecimal = coin => coin.marketCap)(shares: Seq[Share], maxShareInPercent: Percent, remaining: Percent): Seq[Share] = {
+  private def capRemainingShares(by: Coin => BigDecimal = coin => coin.marketCap)(shares: List[Share], maxShareInPercent: Percent, remaining: Percent): List[Share] = {
     val (sharesOverThreshold, sharesBeneathThreshold) = shares.partition(_.share >= maxShareInPercent)
     val sum = sharesBeneathThreshold.map(_.share).sum
     val cappedOver = sharesOverThreshold.map(s => s.copy(share = maxShareInPercent))

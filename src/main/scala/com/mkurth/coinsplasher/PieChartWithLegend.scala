@@ -13,7 +13,7 @@ import scala.math.BigDecimal.RoundingMode
 
 @react class PieChartWithLegend extends StatelessComponent {
 
-  case class Props(shares: Seq[Share])
+  case class Props(shares: List[Share])
 
   type Snapshot = Unit
 
@@ -46,7 +46,7 @@ import scala.math.BigDecimal.RoundingMode
 }
 
 object PieChartWithLegend {
-  val colors: Seq[String] = Seq(
+  val colors: List[String] = List(
     "Aquamarine",
     "Turquoise",
     "MediumTurquoise",

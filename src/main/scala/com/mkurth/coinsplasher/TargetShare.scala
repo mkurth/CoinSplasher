@@ -26,15 +26,15 @@ object MarketDataCSS extends js.Object
   val blacklistedCoinsRef: ReactRef[Element] = React.createRef[Element]
   val marketDataRef: ReactRef[Element] = React.createRef[Element]
 
-  case class Props(repo: MarketRepo, updatedMarketCoins: Seq[MarketCoin] => Unit, updatedShare: Seq[Share] => Unit)
+  case class Props(repo: MarketRepo, updatedMarketCoins: List[MarketCoin] => Unit, updatedShare: List[Share] => Unit)
 
   private val css = MarketDataCSS
 
-  case class State(marketCoins: Seq[MarketCoin],
-                   blacklistedCoins: Seq[CoinSymbol] = Seq(),
+  case class State(marketCoins: List[MarketCoin],
+                   blacklistedCoins: List[CoinSymbol] = List(),
                    limit: Int = 20,
                    maxShareInPercent: Int = 20) {
-    def getShares: Seq[Share] = {
+    def getShares: List[Share] = {
       ShareCalculator.shares(_.marketCap)(
           marketCoins.filterNot(c => blacklistedCoins.contains(c.coin.coinSymbol))
           .take(limit)
@@ -55,7 +55,7 @@ object MarketDataCSS extends js.Object
 
   props.repo.loadMarketData(state.blacklistedCoins, 150).map(market => setState(s = state.copy(marketCoins = market)))
 
-  override def initialState: State = State(Seq())
+  override def initialState: State = State(List())
 
   override def render(): ReactElement = {
     div(className := "market-data")(h1("Set up target Portfolio"),
@@ -114,7 +114,7 @@ object MarketDataCSS extends js.Object
 
   private def updateBlacklistedCoins(): Event => Unit = {
     _ => {
-      val coinToBlacklist = blacklistedCoinsRef.current.asInstanceOf[HTMLInputElement].value.split("[, .;\t\n]").map(_.toUpperCase)
+      val coinToBlacklist = blacklistedCoinsRef.current.asInstanceOf[HTMLInputElement].value.split("[, .;\t\n]").map(_.toUpperCase).toList
       setState(_.copy(blacklistedCoins = coinToBlacklist))
     }
   }

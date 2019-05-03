@@ -9,6 +9,6 @@ case class MarketCoin(coin: Coin, price: BigDecimal)
 
 trait MarketRepo {
 
-  def loadMarketData(blacklisted: Seq[CoinSymbol] = Seq(), limitToCoins: Int = 20): Future[Seq[MarketCoin]]
+  def loadMarketData(blacklisted: List[CoinSymbol] = List(), limitToCoins: Int = 20): Future[List[MarketCoin]]
 
 }

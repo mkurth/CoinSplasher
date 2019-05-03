@@ -1,8 +1,9 @@
 package com.mkurth.coinsplasher
 
+import com.mkurth.coinsplasher.domain.NormalisedCoinSymbols
 import com.mkurth.coinsplasher.domain.Types.{CoinShare, CoinSymbol}
-import com.mkurth.coinsplasher.domain.model.{Coin, Share}
-import com.mkurth.coinsplasher.domain.repo.TradeRepo
+import com.mkurth.coinsplasher.domain.model.{Coin, CoinBalance, Share}
+import com.mkurth.coinsplasher.domain.repo.{MarketCoin, MarketRepo, TradeRepo}
 import slinky.core.Component
 import slinky.core.annotations.react
 import slinky.core.facade.{ReactElement, ReactRef}
@@ -21,12 +22,12 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 @react class CurrentBalance extends Component {
 
   private val css = CurrentBalanceCSS
-  case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[TargetShare], updateCallback: Seq[Balance] => Unit)
+  case class Props(tradeRepo: TradeRepo, marketRepo: ReactRef[TargetShare], updateCallback: List[Balance] => Unit)
 
-  case class State(currentBalance: Seq[Balance], ignoreCoins: Seq[String], error: Option[String]) {
-    def asShare: Seq[Share] = {
-      val sum = currentBalance.map(b => b.value * b.amount).sum
-      currentBalance.map(balance => Share(Coin(balance.coin, 0, 0), balance.amount * balance.value / sum))
+  case class State(currentBalance: List[Balance], ignoreCoins: List[String], error: Option[String]) {
+    def asShare: List[Share] = {
+      val sum = currentBalance.map(b => b.value).sum
+      currentBalance.map(balance => Share(Coin(balance.coin, 0, 0), balance.value / sum))
         .filter(_.share > 0.001)
         .sortBy(_.share * -1)
     }
@@ -41,14 +42,12 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
 
   override def initialState: State = {
     updateBalance()
-    State(Seq(), Seq(), None)
+    State(List(), List(), None)
   }
 
   private def updateBalance(): Unit = {
-    props.tradeRepo.currentBalance(Seq()).foreach(b => {
-      val mc = props.marketRepo.current.state.marketCoins.map(mc => mc.coin.coinSymbol -> mc.price).toMap
-      val balances = b.filter(_.amount > 0).map(cb => Balance(cb.coinSymbol, cb.amount, cb.amount * mc.getOrElse(cb.coinSymbol, 0)))
-      setState(_.copy(currentBalance = balances, error = None))
+    props.tradeRepo.currentBalance(List()).foreach(b => {
+      setState(_.copy(currentBalance = CurrentBalance.toBalance(props.marketRepo.current.state.marketCoins, b), error = None))
     })
   }
 
@@ -68,4 +67,18 @@ case class Balance(coin: CoinSymbol, amount: CoinShare, value: BigDecimal)
     )
   }
 
+}
+
+object CurrentBalance {
+
+  val normalisedCoinSymbols: Map[String, String] = Map(
+    "BCH" -> "BCC",
+    "MIOTA" -> "IOTA"
+  )
+
+  def toBalance(marketCoins: List[MarketCoin], b: List[CoinBalance]): List[Balance] = {
+    val marketCoinMap: Map[String, BigDecimal] = marketCoins.map(mc => mc.copy(coin = mc.coin.copy(coinSymbol = normalisedCoinSymbols.getOrElse(mc.coin.coinSymbol, mc.coin.coinSymbol)))).map(mc => mc.coin.coinSymbol -> mc.price).toMap
+    b.filter(_.amount > BigDecimal(0))
+      .map(cb => Balance(cb.coinSymbol, cb.amount, cb.amount * marketCoinMap.getOrElse(cb.coinSymbol, 0)))
+  }
 }

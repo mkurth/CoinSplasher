@@ -8,7 +8,7 @@ import slinky.core.annotations.react
 import slinky.core.facade.{React, ReactElement, ReactRef}
 import slinky.web.html._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 
@@ -21,33 +21,36 @@ object AppCSS extends js.Object
 object ReactLogo extends js.Object
 
 @react class App extends Component {
-  implicit val ec: ExecutionContext = ExecutionContext.global
   type Props = Unit
 
   case class State(key: String, secret: String,
-                   targetShare: Seq[Share] = Seq(),
-                   currentBalance: Seq[Balance] = Seq(),
-                   marketCoins: Seq[MarketCoin] = Seq()
-                  )
+                   targetShare: List[Share] = List(),
+                   currentBalance: List[Balance] = List(),
+                   marketCoins: List[MarketCoin] = List())
 
-  override def initialState: State = State("", "")
+
+  override def initialState: State = {
+    EncryptedCookie("super secret")
+    val cookieContent = PlainTextCookie.apply.read
+    State(cookieContent.getOrElse("key", ""), cookieContent.getOrElse("secret", ""))
+  }
 
   val marketRepo: MarketRepo = new CoinMarketCap
   val marketDataRef: ReactRef[TargetShare] = React.createRef[TargetShare]
   val currentBalanceRef: ReactRef[CurrentBalance] = React.createRef[CurrentBalance]
-  val tradeRepo = new BinanceTradeRepo(() => state.key, () => state.secret)(ExecutionContext.global)
+  val tradeRepo = new BinanceTradeRepo(() => state.key, () => state.secret)
 
   private val css = AppCSS
 
-  def updatedTargetShares(targetShares: Seq[Share]): Unit = {
+  def updatedTargetShares(targetShares: List[Share]): Unit = {
     setState(state.copy(targetShare = targetShares))
   }
 
-  def updatedCurrentBalance(balance: Seq[Balance]): Unit = {
+  def updatedCurrentBalance(balance: List[Balance]): Unit = {
     setState(state.copy(currentBalance = balance))
   }
 
-  def updatedMarketData(marketCoins: Seq[MarketCoin]): Unit = {
+  def updatedMarketData(marketCoins: List[MarketCoin]): Unit = {
     setState(state.copy(marketCoins = marketCoins))
   }
 
@@ -83,6 +86,8 @@ object ReactLogo extends js.Object
   private def updateSecret: Event => Unit = {
     event =>
       val secret = event.target.asInstanceOf[HTMLInputElement].value
+      PlainTextCookie.apply.update("secret", secret)
+      EncryptedCookie("super secret").update("secret", secret)
       setState(_.copy(secret = secret)
     )
   }
@@ -90,6 +95,8 @@ object ReactLogo extends js.Object
   private def updateKey: Event => Unit = {
     event =>
       val key = event.target.asInstanceOf[HTMLInputElement].value
+      PlainTextCookie.apply.update("key", key)
+      EncryptedCookie("super secret").update("key", key)
       setState(_.copy(key = key)
     )
   }

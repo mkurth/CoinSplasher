@@ -24,7 +24,7 @@ object TradeSolver {
 
   implicit def toTuple(share: MarketCoin): (CoinSymbol, MarketCoin) = share.coin.coinSymbol -> share
 
-  implicit def toTupleSeq[A](a: Seq[A])(implicit transformer: A => (CoinSymbol, A)): Seq[(CoinSymbol, A)] = a.map(transformer)
+  implicit def toTupleList[A](a: List[A])(implicit transformer: A => (CoinSymbol, A)): List[(CoinSymbol, A)] = a.map(transformer)
 
   implicit class TargetShareWorth(share: Share) {
     /**
@@ -41,7 +41,7 @@ object TradeSolver {
     def worth(implicit balance: CoinBalance): CoinShare = market.price * balance.amount
   }
 
-  def solveTrades(currentBalance: Seq[CoinBalance], targetShares: Seq[Share], marketData: Seq[MarketCoin]): Seq[Order] = {
+  def solveTrades(currentBalance: List[CoinBalance], targetShares: List[Share], marketData: List[MarketCoin]): List[Order] = {
     val targetShareMap: Map[CoinSymbol, Share] = targetShares.map(toTuple).toMap
     val coinBalanceMap: Map[CoinSymbol, CoinBalance] = currentBalance.map(toTuple).toMap(implicitly)
     val marketDataMap: Map[CoinSymbol, MarketCoin] = marketData.map(toTuple).toMap(implicitly)
@@ -65,7 +65,7 @@ object TradeSolver {
         case (Some(targetShare: Share), None, Some(market: MarketCoin)) =>
           val orderVolume = targetShare.worth / market.price
           BuyOrder(targetShare.coin.coinSymbol, orderVolume, targetShare.worth)
-      }).toSeq
+      }).toList
   }
 
 }
