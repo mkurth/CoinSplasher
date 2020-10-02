@@ -1,20 +1,19 @@
 name := "CoinSplasher"
-
-
+scalaVersion := "2.13.3"
 val commonSettings = Seq(
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.13.3",
   version := "0.0.1",
-  libraryDependencies += "com.olvind" %% "binance-scala-api" % "0.0.1-SNAPSHOT",
-  libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.10",
-  libraryDependencies += "com.softwaremill.sttp" %% "core" % "1.3.5",
-  libraryDependencies += "com.typesafe" % "config" % "1.3.3",
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test,
-  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
+  libraryDependencies += "com.typesafe.play"     %% "play-json"      % "2.9.1",
+  libraryDependencies += "com.softwaremill.sttp" %% "core"           % "1.7.2",
+  libraryDependencies += "com.typesafe"          % "config"          % "1.4.0",
+  libraryDependencies += "org.typelevel"         %% "cats-core"      % "2.2.0",
+  libraryDependencies += "org.typelevel"         %% "cats-effect"    % "2.2.0",
+  libraryDependencies += "org.scalatest"         %% "scalatest"      % "3.2.2" % Test,
+  libraryDependencies += "ch.qos.logback"        % "logback-classic" % "1.2.3" % Runtime
 )
 
 lazy val core = project
   .in(new File("core"))
-  .dependsOn(RootProject(uri("https://github.com/oyvindberg/binance-scala-api.git#master")))
   .settings(commonSettings)
 
 lazy val console = project

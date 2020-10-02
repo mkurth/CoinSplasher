@@ -2,17 +2,18 @@ package com.mkurth.coinsplasher.domain
 
 import com.mkurth.coinsplasher.domain.model.{Coin, CoinBalance, Share}
 import com.mkurth.coinsplasher.domain.repo.MarketCoin
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TradeSolverTest extends FlatSpec with Matchers {
+class TradeSolverTest extends AnyFlatSpec with Matchers {
 
-  val btc = Coin("BTC", 1, 1)
-  val ltc = Coin("LTC", 1, 1)
-  val `1000€ in LTC` = Seq(CoinBalance(ltc.coinSymbol, 10))
-  val `1000€ in BTC` = Seq(CoinBalance(btc.coinSymbol, 1))
+  val btc                             = Coin("BTC", 1, 1)
+  val ltc                             = Coin("LTC", 1, 1)
+  val `1000€ in LTC`                  = Seq(CoinBalance(ltc.coinSymbol, 10))
+  val `1000€ in BTC`                  = Seq(CoinBalance(btc.coinSymbol, 1))
   val `1000€ in LTC and 1000€ in BTC` = Seq(CoinBalance(ltc.coinSymbol, 10), CoinBalance(btc.coinSymbol, 1))
-  val `only BTC target` = Seq(Share(btc, 1))
-  val `50:50 BTC/LTC target` = Seq(Share(btc, 0.5), Share(ltc, 0.5))
+  val `only BTC target`               = Seq(Share(btc, 1))
+  val `50:50 BTC/LTC target`          = Seq(Share(btc, 0.5), Share(ltc, 0.5))
   val marketCoins = Seq(
     MarketCoin(btc, 1000),
     MarketCoin(ltc, 100)

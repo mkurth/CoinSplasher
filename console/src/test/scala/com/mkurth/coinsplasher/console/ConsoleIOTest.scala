@@ -1,10 +1,10 @@
 package com.mkurth.coinsplasher.console
 
 import com.mkurth.coinsplasher.domain.{BuyOrder, SellOrder}
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ConsoleIOTest extends FlatSpec with Matchers {
-
+class ConsoleIOTest extends AnyFlatSpec with Matchers {
 
   val consoleIo = new ConsoleIO {}
   "ConsoleIO" should "write BuyOrder" in {

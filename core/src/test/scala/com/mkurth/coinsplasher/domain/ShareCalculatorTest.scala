@@ -3,13 +3,14 @@ package com.mkurth.coinsplasher.domain
 import java.math.MathContext
 
 import com.mkurth.coinsplasher.domain.model.{Coin, Share}
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShareCalculatorTest extends FlatSpec with Matchers {
+class ShareCalculatorTest extends AnyFlatSpec with Matchers {
 
   "ShareCalculator with two coins having a market share of 70:30" should "return 50:50 shares, when capped at 50%" in {
-    val btc = Coin("BTC", 70, 1)
-    val ltc = Coin("LTC", 30, 1)
+    val btc   = Coin("BTC", 70, 1)
+    val ltc   = Coin("LTC", 30, 1)
     val coins = Seq(btc, ltc)
 
     ShareCalculator.shares(_.marketCap)(coins, 0.50).map(rounded) should contain(Share(btc, 0.50))
@@ -17,7 +18,7 @@ class ShareCalculatorTest extends FlatSpec with Matchers {
   }
 
   "ShareCalculator with one coin" should "return one Share with 50%, even when capped at 50%" in {
-    val ltc = Coin("LTC", 30, 1)
+    val ltc   = Coin("LTC", 30, 1)
     val coins = Seq(ltc)
 
     ShareCalculator.shares(_.marketCap)(coins, 0.50).map(rounded) should contain(Share(ltc, 0.50))

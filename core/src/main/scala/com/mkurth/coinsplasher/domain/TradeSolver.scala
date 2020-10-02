@@ -11,10 +11,8 @@ sealed trait Order {
   val amount: CoinShare
   val worth: BigDecimal
 }
-
 case class SellOrder(coinSymbol: CoinSymbol, amount: CoinShare, worth: BigDecimal) extends Order
-
-case class BuyOrder(coinSymbol: CoinSymbol, amount: CoinShare, worth: BigDecimal) extends Order
+case class BuyOrder(coinSymbol: CoinSymbol, amount: CoinShare, worth: BigDecimal)  extends Order
 
 object TradeSolver {
 
@@ -27,6 +25,7 @@ object TradeSolver {
   implicit def toTupleSeq[A](a: Seq[A])(implicit transformer: A => (CoinSymbol, A)): Seq[(CoinSymbol, A)] = a.map(transformer)
 
   implicit class TargetShareWorth(share: Share) {
+
     /**
       * 60% von 1000€
       * 0.6 * 1000 = 600
@@ -35,6 +34,7 @@ object TradeSolver {
   }
 
   implicit class MarketWorth(market: MarketCoin) {
+
     /**
       * BTC@6000€ * 0.1 BTC im Besitz
       */
@@ -42,9 +42,9 @@ object TradeSolver {
   }
 
   def solveTrades(currentBalance: Seq[CoinBalance], targetShares: Seq[Share], marketData: Seq[MarketCoin]): Seq[Order] = {
-    val targetShareMap: Map[CoinSymbol, Share] = targetShares.map(toTuple).toMap
+    val targetShareMap: Map[CoinSymbol, Share]       = targetShares.map(toTuple).toMap
     val coinBalanceMap: Map[CoinSymbol, CoinBalance] = currentBalance.map(toTuple).toMap(implicitly)
-    val marketDataMap: Map[CoinSymbol, MarketCoin] = marketData.map(toTuple).toMap(implicitly)
+    val marketDataMap: Map[CoinSymbol, MarketCoin]   = marketData.map(toTuple).toMap(implicitly)
 
     implicit val userBalance: CoinShare = (coinBalanceMap.keys ++ marketDataMap.keys).toSet
       .map((coinSymbol: CoinSymbol) => coinSymbol -> (coinBalanceMap.get(coinSymbol), marketDataMap.get(coinSymbol)))
@@ -52,11 +52,13 @@ object TradeSolver {
       .sum
 
     (targetShareMap.keys ++ coinBalanceMap.keys ++ marketDataMap.keys).toSet
-      .map({key: CoinSymbol => (targetShareMap.get(key), coinBalanceMap.get(key), marketDataMap.get(key))})
+      .map({ key: CoinSymbol =>
+        (targetShareMap.get(key), coinBalanceMap.get(key), marketDataMap.get(key))
+      })
       .collect({
         case (Some(targetShare: Share), Some(balance), Some(market: MarketCoin)) if targetShare.worth > market.worth(balance) =>
           val orderVolume = targetShare.worth / market.price - balance.amount
-          BuyOrder(balance.coinSymbol, orderVolume, targetShare.worth - market.worth(balance) )
+          BuyOrder(balance.coinSymbol, orderVolume, targetShare.worth - market.worth(balance))
         case (Some(targetShare: Share), Some(balance), Some(market: MarketCoin)) if targetShare.worth < market.worth(balance) =>
           val sellVolume = balance.amount - targetShare.worth / market.price
           SellOrder(balance.coinSymbol, sellVolume, market.worth(balance) - targetShare.worth)
@@ -65,7 +67,8 @@ object TradeSolver {
         case (Some(targetShare: Share), None, Some(market: MarketCoin)) =>
           val orderVolume = targetShare.worth / market.price
           BuyOrder(targetShare.coin.coinSymbol, orderVolume, targetShare.worth)
-      }).toSeq
+      })
+      .toSeq
   }
 
 }
