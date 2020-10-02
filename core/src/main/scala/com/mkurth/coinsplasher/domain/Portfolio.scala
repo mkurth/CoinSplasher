@@ -5,7 +5,10 @@ import eu.timepit.refined.auto.autoUnwrap
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.refineV
 
-final case class Share(value: BigDecimal Refined Positive)
+final case class Share(value: BigDecimal Refined Positive) {
+  def <(other: Share): Boolean               = value.value < other.value.value
+  def -(other: Share): Either[String, Share] = refineV[Positive](value.value - other.value.value).map(Share)
+}
 final case class Price[A <: Currency](value: BigDecimal Refined Positive)
 final case class MarketCapitalisation(value: BigDecimal Refined Positive)
 final case class Coin[A <: Currency](marketCapitalisation: MarketCapitalisation, price: Price[A], currency: CryptoCurrency)
