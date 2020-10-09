@@ -14,11 +14,11 @@ final case class NoopStrategy[A <: Currency]() extends RebalancingStrategy[A] {
   override def rebalance(sourcePortfolio: SourcePortfolio[A]): Option[TargetPortfolio[A]] = Some(sourcePortfolio)
 }
 
-final case class EquallySplashTo[A <: Currency](coins: NonEmptyList[Coin[A]]) extends RebalancingStrategy[A] {
+final case class EquallySplashTo[A <: Currency](coins: List[Coin[A]]) extends RebalancingStrategy[A] {
   override def rebalance(sourcePortfolio: SourcePortfolio[A]): Option[TargetPortfolio[A]] = {
     val totalValueOfPortfolio = sourcePortfolio.totalValue.getOrElse(Price(refineMV(BigDecimal(1))))
     val valueForEachCoin      = totalValueOfPortfolio.value / coins.length
-    val target = coins.toList.flatMap(coin => {
+    val target = coins.flatMap(coin => {
       val share = valueForEachCoin / coin.price.value
       refineV[Positive](share).map(s => PortfolioEntry(share = Share(s), coin = coin)).toOption
     })

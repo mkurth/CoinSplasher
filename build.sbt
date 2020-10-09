@@ -1,7 +1,7 @@
 name := "CoinSplasher"
 scalaVersion := "2.13.3"
 
-val circeVersion = "0.12.3"
+val circeVersion = "0.13.0"
 
 val commonSettings = Seq(
   scalaVersion := "2.13.3",
@@ -10,7 +10,8 @@ val commonSettings = Seq(
   libraryDependencies += "org.typelevel" %% "cats-effect"  % "2.2.0",
   libraryDependencies += "eu.timepit"    %% "refined"      % "0.9.17",
   libraryDependencies += "eu.timepit"    %% "refined-cats" % "0.9.17",
-  libraryDependencies += "org.scalatest" %% "scalatest"    % "3.2.2" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest"    % "3.2.2" % Test,
+  scalacOptions ++= List("-Ymacro-annotations")
 )
 
 lazy val core = project
@@ -24,6 +25,7 @@ lazy val console = project
     commonSettings,
     libraryDependencies += "io.circe"                     %% "circe-core"                     % circeVersion,
     libraryDependencies += "io.circe"                     %% "circe-generic"                  % circeVersion,
+    libraryDependencies += "io.circe"                     %% "circe-generic-extras"           % circeVersion,
     libraryDependencies += "io.circe"                     %% "circe-parser"                   % circeVersion,
     libraryDependencies += "io.circe"                     %% "circe-refined"                  % circeVersion,
     libraryDependencies += "com.softwaremill.sttp.client" %% "core"                           % "2.2.9",
