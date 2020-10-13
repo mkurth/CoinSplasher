@@ -14,11 +14,11 @@ object CryptoCurrency {
 }
 
 sealed trait Fiat extends Currency
-final case class Dollar() extends Fiat {
-  val name: String Refined NonEmpty = refineMV("Dollar")
+case object Dollar extends Fiat {
+  val name: String Refined NonEmpty = refineMV("usd")
   val symbol: Char                  = '$'
 }
-final case class Euro() extends Fiat {
-  val name: String Refined NonEmpty = refineMV("Euro")
+case object Euro extends Fiat {
+  val name: String Refined NonEmpty = refineMV("eur")
   val symbol: Char                  = '€'
 }

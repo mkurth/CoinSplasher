@@ -10,7 +10,7 @@ class NoopStrategyTest extends AnyFlatSpec with Matchers {
   behavior of "NoopStrategy"
 
   it should "do absolutely nothing" in {
-    val source = Portfolio[Euro](
+    val source = Portfolio[Fiat](
       entries = NonEmptyList.one(
         PortfolioEntry(
           coin = Coin(
@@ -23,6 +23,6 @@ class NoopStrategyTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    NoopStrategy[Euro]().rebalance(source) shouldBe Some(source)
+    NoopStrategy[Fiat]().rebalance(source) shouldBe Some(source)
   }
 }

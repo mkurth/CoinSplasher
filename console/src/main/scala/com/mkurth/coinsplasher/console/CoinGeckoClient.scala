@@ -1,7 +1,7 @@
 package com.mkurth.coinsplasher.console
 
 import cats.effect.{ContextShift, IO}
-import com.mkurth.coinsplasher.domain.{Coin, CryptoCurrency, Euro, MarketCapitalisation, PortfolioEntry, Price, Share}
+import com.mkurth.coinsplasher.domain.{Coin, CryptoCurrency, Currency, Euro, MarketCapitalisation, PortfolioEntry, Price, Share}
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.refineV
@@ -25,7 +25,7 @@ object MarketData {
 
 trait CoinGeckoClient[F[_]] {
 
-  def markets: F[Either[String, List[Coin[Euro]]]]
+  def markets[A <: Currency](currency: A): F[Either[String, List[Coin[A]]]]
 
 }
 
@@ -34,11 +34,11 @@ object CoinGeckoClient {
     implicit val cs: ContextShift[IO]                             = IO.contextShift(scala.concurrent.ExecutionContext.global)
     val ioBackend: IO[SttpBackend[IO, Nothing, WebSocketHandler]] = AsyncHttpClientCatsBackend[IO]()
 
-    override def markets: IO[Either[String, List[Coin[Euro]]]] =
+    override def markets[A <: Currency](currency: A): IO[Either[String, List[Coin[A]]]] =
       for {
         backend <- ioBackend
         response <- basicRequest
-          .get(uri"https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&order=market_cap_desc&per_page=100&page=1&sparkline=false")
+          .get(uri"https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency.name.value}&order=market_cap_desc&per_page=100&page=1&sparkline=false")
           .response(asJson[List[MarketData]])
           .send()(backend, refl)
       } yield {
@@ -57,7 +57,9 @@ object CoinGeckoClient {
                     marketCapitalisation = MarketCapitalisation(positiveMarketCap),
                     price                = Price(positivePrice),
                     CryptoCurrency(symbol, '$')
-                )))
+                )
+            )
+          )
       }
   }
 }

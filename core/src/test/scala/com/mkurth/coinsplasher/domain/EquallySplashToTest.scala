@@ -8,19 +8,19 @@ import org.scalatest.matchers.should.Matchers
 
 class EquallySplashToTest extends AnyFlatSpec with Matchers {
   behavior of "SplashTopN"
-  val BTC: Coin[Euro] = Coin[Euro](
+  val BTC: Coin[Fiat] = Coin[Fiat](
     marketCapitalisation = MarketCapitalisation(refineMV(BigDecimal(1))),
     price                = Price(refineMV(BigDecimal(1))),
     currency             = CryptoCurrency(refineMV[NonEmpty]("BTC"), '“')
   )
-  val LTC: Coin[Euro] = Coin[Euro](
+  val LTC: Coin[Fiat] = Coin[Fiat](
     marketCapitalisation = MarketCapitalisation(refineMV(BigDecimal(1))),
     price                = Price(refineMV(BigDecimal(0.1))),
     currency             = CryptoCurrency(refineMV[NonEmpty]("LTC"), '“')
   )
 
   it should "rebalance" in {
-    val source = Portfolio[Euro](
+    val source = Portfolio[Fiat](
       entries = NonEmptyList.one(
         PortfolioEntry(
           coin  = BTC,
@@ -29,7 +29,7 @@ class EquallySplashToTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    val expectedTarget = Portfolio[Euro](
+    val expectedTarget = Portfolio[Fiat](
       entries = NonEmptyList.of(
         PortfolioEntry(
           coin  = BTC,
@@ -42,7 +42,7 @@ class EquallySplashToTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    val result = EquallySplashTo[Euro](NonEmptyList.of(BTC, LTC)).rebalance(source)
+    val result = EquallySplashTo[Fiat](List(BTC, LTC)).rebalance(source)
     result should not be Some(source)
     result shouldBe Some(expectedTarget)
   }

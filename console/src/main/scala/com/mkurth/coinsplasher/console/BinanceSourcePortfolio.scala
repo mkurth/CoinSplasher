@@ -9,14 +9,14 @@ import eu.timepit.refined.refineV
 
 object BinanceSourcePortfolio {
 
-  def get(client: BinanceClient[IO, String], geckoClient: CoinGeckoClient[IO]): IO[SourcePortfolio[Euro]] =
+  def get[A <: Currency](client: BinanceClient[IO, String], geckoClient: CoinGeckoClient[IO], a: A): IO[SourcePortfolio[A]] =
     (for {
       balance    <- EitherT(client.currentBalance)
-      marketData <- EitherT(geckoClient.markets)
+      marketData <- EitherT(geckoClient.markets[A](a))
       entries    <- EitherT.fromOption[IO].apply(NonEmptyList.fromList(matchMarketWithBalance(marketData, balance)), "no positive balances")
     } yield Portfolio(entries)).value.map(_.toOption.get)
 
-  private def matchMarketWithBalance(marketData: List[Coin[Euro]], accountBalance: AccountBalance) =
+  private def matchMarketWithBalance[A <: Currency](marketData: List[Coin[A]], accountBalance: AccountBalance) =
     accountBalance.balances.flatMap(balance => {
       marketData.find(_.currency.name.value.toLowerCase.startsWith(balance.asset.value.toLowerCase.replace("LD", ""))).flatMap { market =>
         for {
