@@ -1,25 +1,20 @@
 package com.mkurth.coinsplasher.console
 
 import cats.data.EitherT
+import cats.effect.ExitCase.Canceled
 import cats.effect.{ExitCode, IO, IOApp}
 import com.mkurth.coinsplasher.domain.RebalancePortfolio._
 import com.mkurth.coinsplasher.domain.RefinedOps.{NELOps, NonEmptyString}
 import com.mkurth.coinsplasher.domain._
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.predicates.all.NonEmpty
-import eu.timepit.refined.refineV
+import eu.timepit.refined.{refineMV, refineV}
 import eu.timepit.refined.types.numeric.PosInt
 
 import scala.io.StdIn.{readInt, readLine}
 import scala.language.implicitConversions
 
 object Console extends IOApp {
-
-  val tradeExecutor: IO[TradeExecutor[IO]] = IO(plan => {
-    println(plan)
-    IO(SuccessfulTrade)
-  })
 
   type WithError[T] = EitherT[IO, String, T]
 
@@ -28,28 +23,39 @@ object Console extends IOApp {
       secretKey <- readNonEmptyLine("Binance Secret Key")
       apiKey    <- readNonEmptyLine("Binance API Key")
       splashTo  <- readPositiveIntLine("amount of coins to distribute to")
-      currency <- readNonEmptyLine("Choose a FIAT currency (EURO/DOLLAR)")
+      currency <- readNonEmptyLine("Choose a FIAT currency ([EURO]/DOLLAR)")
         .map(
           _.value.toLowerCase() match {
-            case "eur" | "euro" => Euro
-            case "$" | "dollar" => Dollar
-            case _              => Euro
+            case "$" | "dollar" | "usd" => Fiat(refineMV[NonEmpty]("usd"), '$')
+            case _                      => Fiat(refineMV[NonEmpty]("eur"), '€')
           }
         )
-      exitCode <- main(secretKey, apiKey, splashTo, currency)
+      strategy <- readNonEmptyLine("Choose a strategy")
+      exitCode <- main(secretKey, apiKey, splashTo, currency, strategy).guaranteeCase {
+        case Canceled =>
+          IO(println("Interrupted: releasing and exiting!"))
+        case _ =>
+          IO(println("Normal exit!"))
+      }
     } yield exitCode
 
-  private def main[A <: Currency](secretKey: NonEmptyString, apiKey: NonEmptyString, splashTo: PosInt, a: A) =
+  private def main[A <: Currency](secretKey: NonEmptyString, apiKey: NonEmptyString, splashTo: PosInt, a: A, strategyChoice: NonEmptyString): IO[ExitCode] =
     for {
       _ <- IO(println(s"using $a as FIAT currency"))
       client          = BinanceClient(secretKey, apiKey)
       gecko           = CoinGeckoClient()
       sourcePortfolio = BinanceSourcePortfolio.get[A](client, gecko, a)
       strategy = gecko.markets[A](a).map {
-        case Right(market) => EquallyDistributeTo[A](market.take(splashTo))
-        case Left(_)       => NoopStrategy[A]()
+        case Right(market) =>
+          strategyChoice.value match {
+            case "equal"  => EquallyDistributeTo[A](market.take(splashTo))
+            case "market" => DistributeBasedOnMarketCap[A](market.take(splashTo))
+            case _        => NoopStrategy[A]()
+          }
+        case Left(_) => NoopStrategy[A]()
       }
-      tradePlanner = IO(TradingPlanner.planTrade[A])
+      tradePlanner  = IO(TradingPlanner.planTrade[A])
+      tradeExecutor = IO(BinanceTradeExecutor.executor(client))
       result <- RebalancePortfolio.rebalance[IO, A](sourcePortfolio, strategy, tradePlanner, tradeExecutor)
     } yield
       result match {
