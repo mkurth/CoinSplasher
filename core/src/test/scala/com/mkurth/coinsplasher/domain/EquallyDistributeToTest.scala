@@ -42,8 +42,8 @@ class EquallyDistributeToTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    val result = EquallyDistributeTo[Fiat](List(BTC, LTC)).rebalance(source)
-    result should not be Some(source)
-    result shouldBe Some(expectedTarget)
+    val result = EquallyDistributeTo[Fiat](NonEmptyList.of(BTC, LTC)).rebalance(source)
+    result should not be source
+    result shouldBe expectedTarget
   }
 }

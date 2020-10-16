@@ -3,11 +3,13 @@ package com.mkurth.coinsplasher.console
 import cats.data.EitherT
 import cats.effect.{ExitCode, IO, IOApp}
 import com.mkurth.coinsplasher.domain.RebalancePortfolio._
-import com.mkurth.coinsplasher.domain.{RebalancingStrategy, _}
+import com.mkurth.coinsplasher.domain.RefinedOps.{NELOps, NonEmptyString}
+import com.mkurth.coinsplasher.domain._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.predicates.all.NonEmpty
 import eu.timepit.refined.refineV
+import eu.timepit.refined.types.numeric.PosInt
 
 import scala.io.StdIn.{readInt, readLine}
 import scala.language.implicitConversions
@@ -37,25 +39,25 @@ object Console extends IOApp {
       exitCode <- main(secretKey, apiKey, splashTo, currency)
     } yield exitCode
 
-  private def main[A <: Currency](secretKey: String Refined NonEmpty, apiKey: String Refined NonEmpty, splashTo: Int Refined Positive, a: A) =
+  private def main[A <: Currency](secretKey: NonEmptyString, apiKey: NonEmptyString, splashTo: PosInt, a: A) =
     for {
       _ <- IO(println(s"using $a as FIAT currency"))
       client          = BinanceClient(secretKey, apiKey)
       gecko           = CoinGeckoClient()
       sourcePortfolio = BinanceSourcePortfolio.get[A](client, gecko, a)
       strategy = gecko.markets[A](a).map {
-        case Right(market) => EquallyDistributeTo[A](market.take(splashTo.value))
+        case Right(market) => EquallyDistributeTo[A](market.take(splashTo))
         case Left(_)       => NoopStrategy[A]()
       }
       tradePlanner = IO(TradingPlanner.planTrade[A])
       result <- RebalancePortfolio.rebalance[IO, A](sourcePortfolio, strategy, tradePlanner, tradeExecutor)
     } yield
       result match {
-        case Some(SuccessfulTrade) => ExitCode.Success
-        case _                     => ExitCode.Error
+        case SuccessfulTrade => ExitCode.Success
+        case _               => ExitCode.Error
       }
 
-  private def readPositiveIntLine(prompt: String): IO[Int Refined Positive] =
+  private def readPositiveIntLine(prompt: String): IO[PosInt] =
     IO {
       println(prompt + ":")
       readInt()
@@ -65,7 +67,7 @@ object Console extends IOApp {
         case Right(value) => value
     })
 
-  private def readNonEmptyLine(prompt: String): IO[String Refined NonEmpty] =
+  private def readNonEmptyLine(prompt: String): IO[NonEmptyString] =
     IO(readLine(prompt + ":\n")).map(v =>
       refineV[NonEmpty](v.trim) match {
         case Left(value)  => throw new IllegalArgumentException(s"$value is empty")

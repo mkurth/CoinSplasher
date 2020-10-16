@@ -3,7 +3,6 @@ package com.mkurth.coinsplasher.domain
 import cats.effect.Async
 import cats.syntax.flatMap._
 import cats.syntax.functor._
-import cats.syntax.traverse._
 import com.mkurth.coinsplasher.domain.TradingPlanner.{Order, TradingPlan}
 
 object RebalancePortfolio {
@@ -22,14 +21,14 @@ object RebalancePortfolio {
   def rebalance[F[_]: Async, A <: Currency](sourcePortfolio: F[SourcePortfolio[A]],
                                             strategy: F[RebalancingStrategy[A]],
                                             tradePlanner: F[TradePlanner[A]],
-                                            tradeExecutor: F[TradeExecutor[F]]): F[Option[TradingResult]] =
+                                            tradeExecutor: F[TradeExecutor[F]]): F[TradingResult] =
     for {
       source   <- sourcePortfolio
       str      <- strategy
       planner  <- tradePlanner
       executor <- tradeExecutor
-      maybeTarget = str.rebalance(source)
-      maybePlan   = maybeTarget.map(target => planner(source)(target))
-      tradingResult <- maybePlan.map(executor.apply).sequence
+      target = str.rebalance(source)
+      plan   = planner(source)(target)
+      tradingResult <- executor(plan)
     } yield tradingResult
 }

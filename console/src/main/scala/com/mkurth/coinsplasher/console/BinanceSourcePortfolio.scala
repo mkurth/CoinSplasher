@@ -16,7 +16,7 @@ object BinanceSourcePortfolio {
       entries    <- EitherT.fromOption[IO].apply(NonEmptyList.fromList(matchMarketWithBalance(marketData, balance)), "no positive balances")
     } yield Portfolio(entries)).value.map(_.toOption.get)
 
-  private def matchMarketWithBalance[A <: Currency](marketData: List[Coin[A]], accountBalance: AccountBalance) =
+  private def matchMarketWithBalance[A <: Currency](marketData: NonEmptyList[Coin[A]], accountBalance: AccountBalance) =
     accountBalance.balances.flatMap(balance => {
       marketData.find(_.currency.name.value.toLowerCase.startsWith(balance.asset.value.toLowerCase.replace("LD", ""))).flatMap { market =>
         for {

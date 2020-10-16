@@ -1,10 +1,7 @@
 package com.mkurth.coinsplasher.domain
 
-import com.mkurth.coinsplasher.domain.Portfolio.Ops
 import com.mkurth.coinsplasher.domain.RebalancePortfolio.{TargetPortfolio, TradePlanner}
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
+import com.mkurth.coinsplasher.domain.RefinedOps._
 
 object TradingPlanner {
 
@@ -24,7 +21,7 @@ object TradingPlanner {
           val sourceCurrency = sourceEntry.coin.currency
           findInPortfolio(target, sourceCurrency) match {
             case Some(targetEntry) if targetEntry.share.value < sourceEntry.share.value =>
-              val sellAmount = refineV[Positive](sourceEntry.share.value - targetEntry.share.value)
+              val sellAmount = sourceEntry.share.value.minusE(targetEntry.share.value)
               sellAmount.map(s => SellOrder(sourceCurrency, Share(s))).toOption
             case None => Some(SellOrder(sourceCurrency, sourceEntry.share))
             case _    => None
@@ -34,7 +31,7 @@ object TradingPlanner {
           val targetCurrency = targetEntry.coin.currency
           findInPortfolio(source, targetCurrency) match {
             case Some(sourceEntry) if sourceEntry.share.value < targetEntry.share.value =>
-              val buyAmount = refineV[Positive](targetEntry.share.value - sourceEntry.share.value)
+              val buyAmount = targetEntry.share.value.minusE(sourceEntry.share.value)
               buyAmount.map(s => BuyOrder(targetCurrency, Share(s))).toOption
             case None => Some(BuyOrder(targetCurrency, targetEntry.share))
             case _    => None

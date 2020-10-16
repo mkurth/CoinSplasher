@@ -23,6 +23,6 @@ class NoopStrategyTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    NoopStrategy[Fiat]().rebalance(source) shouldBe Some(source)
+    NoopStrategy[Fiat]().rebalance(source) shouldBe source
   }
 }

@@ -23,18 +23,18 @@ class DistributeBasedOnMarketCapTest extends AnyFlatSpec with Matchers {
   behavior of "DistributeBasedOnMarketCap"
 
   it should "create a target portfolio based on the current market cap" in {
-    val marketCap = List(
+    val marketCap = NonEmptyList.of(
       BTC,
       LTC
     )
 
     val source = Portfolio[Fiat](NonEmptyList.one(PortfolioEntry(BTC, Share(refineMV[Positive](BigDecimal(15))))))
-    DistributeBasedOnMarketCap(marketCap).rebalance(source) shouldBe Some(
+    DistributeBasedOnMarketCap(marketCap).rebalance(source) shouldBe
       Portfolio[Fiat](
         NonEmptyList.of(
           PortfolioEntry(BTC, Share(refineMV[Positive](BigDecimal(10.0)))),
           PortfolioEntry(LTC, Share(refineMV[Positive](BigDecimal(50.0))))
-        )))
+        ))
   }
 
 }
