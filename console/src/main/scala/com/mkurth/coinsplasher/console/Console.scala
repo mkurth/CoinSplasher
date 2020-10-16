@@ -44,7 +44,7 @@ object Console extends IOApp {
       gecko           = CoinGeckoClient()
       sourcePortfolio = BinanceSourcePortfolio.get[A](client, gecko, a)
       strategy = gecko.markets[A](a).map {
-        case Right(market) => EquallySplashTo[A](market.take(splashTo.value))
+        case Right(market) => EquallyDistributeTo[A](market.take(splashTo.value))
         case Left(_)       => NoopStrategy[A]()
       }
       tradePlanner = IO(TradingPlanner.planTrade[A])

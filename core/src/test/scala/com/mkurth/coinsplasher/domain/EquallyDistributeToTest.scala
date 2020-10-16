@@ -6,7 +6,7 @@ import eu.timepit.refined.refineMV
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class EquallySplashToTest extends AnyFlatSpec with Matchers {
+class EquallyDistributeToTest extends AnyFlatSpec with Matchers {
   behavior of "SplashTopN"
   val BTC: Coin[Fiat] = Coin[Fiat](
     marketCapitalisation = MarketCapitalisation(refineMV(BigDecimal(1))),
@@ -42,7 +42,7 @@ class EquallySplashToTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    val result = EquallySplashTo[Fiat](List(BTC, LTC)).rebalance(source)
+    val result = EquallyDistributeTo[Fiat](List(BTC, LTC)).rebalance(source)
     result should not be Some(source)
     result shouldBe Some(expectedTarget)
   }
