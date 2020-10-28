@@ -4,9 +4,11 @@ import java.math.{BigInteger, MathContext, RoundingMode}
 
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
-import com.mkurth.coinsplasher.console.BinanceClient.ExchangeInfo
+import cats.implicits.toTraverseOps
+import cats.syntax.functor._
 import com.mkurth.coinsplasher.domain.RefinedOps.{NonEmptyString, PositiveBigDecimal}
 import com.mkurth.coinsplasher.domain.TradingPlanner.{BuyOrder, SellOrder}
+import com.mkurth.coinsplasher.domain.{Currency, Share}
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.numeric.{NonNegative, Positive}
@@ -16,12 +18,9 @@ import io.circe.generic.auto._
 import io.circe.refined._
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import sttp.client.{SttpBackend, _}
-import sttp.client.asynchttpclient.WebSocketHandler
+import sttp.client._
 import sttp.client.asynchttpclient.cats.AsyncHttpClientCatsBackend
 import sttp.client.circe._
-import cats.syntax.functor._
-import com.mkurth.coinsplasher.domain.{Currency, Share}
 
 import scala.<:<.refl
 
@@ -32,7 +31,6 @@ final case class AvgPrice(price: String)
 
 trait BinanceClient[F[_], E] {
 
-  def getServerTime: F[Long]
   def currentBalance: IO[Either[E, AccountBalance]]
   def avgPrice(symbol: NonEmptyString): IO[Either[E, BigDecimal Refined Positive]]
   def putSellOrders(sellOrders: NonEmptyList[SellOrder]): F[Unit]
@@ -83,11 +81,14 @@ object BinanceClient {
     for {
       backend      <- AsyncHttpClientCatsBackend[IO]()
       exchangeInfo <- basicRequest.get(uri"https://api.binance.com/api/v3/exchangeInfo").response(asJson[ExchangeInfo]).send()(backend, refl).map(_.body.toOption.get)
+      serverTimeOffset <- basicRequest
+        .get(uri"https://api.binance.com/api/v3/time")
+        .response(asJson[ServerTimeResponse])
+        .send()(backend, refl)
+        .map(_.body.map(_.serverTime).getOrElse(0L))
+        .map(serverTime => System.currentTimeMillis() - serverTime)
     } yield {
       new BinanceClient[IO, String] {
-
-        override def getServerTime: IO[Long] =
-          basicRequest.get(uri"https://api.binance.com/api/v3/time").response(asJson[ServerTimeResponse]).send()(backend, refl).map(_.body.map(_.serverTime).getOrElse(0L))
 
         override def currentBalance: IO[Either[String, AccountBalance]] =
           for {
@@ -103,8 +104,10 @@ object BinanceClient {
             response.body.left.map(_.toString).map(ab => ab.copy(balances = ab.balances.filter(_.free.value > 0)))
           }
 
-        override def putSellOrders(sellOrders: NonEmptyList[SellOrder]): IO[Unit] = sellOrders.traverse(so => sendOrder("SELL", so.currency, so.share)).as(())
-        override def putBuyOrders(buyOrders: NonEmptyList[BuyOrder]): IO[Unit]    = buyOrders.traverse(bo => sendOrder("BUY", bo.currency, bo.share)).as(())
+        override def putSellOrders(sellOrders: NonEmptyList[SellOrder]): IO[Unit] =
+          sellOrders.filter(_.currency.name.value.toLowerCase != "btc").traverse(so => sendOrder("SELL", so.currency, so.share)).as(())
+        override def putBuyOrders(buyOrders: NonEmptyList[BuyOrder]): IO[Unit] =
+          buyOrders.filter(_.currency.name.value.toLowerCase != "btc").traverse(bo => sendOrder("BUY", bo.currency, bo.share)).as(())
         override def avgPrice(symbol: Refined[String, NonEmpty]): IO[Either[String, Refined[BigDecimal, Positive]]] =
           basicRequest
             .get(uri"https://api.binance.com/api/v3/avgPrice?symbol=$symbol")
@@ -112,42 +115,35 @@ object BinanceClient {
             .send()(backend, refl)
             .map(_.body.flatMap(avg => refineV[Positive](BigDecimal(avg.price))).left.map(_.toString))
 
-        private def sendOrder(side: String, currency: Currency, share: Share): IO[Unit] = {
-          val symbolName = currency.name.value.toUpperCase + "BTC"
+        private def sendOrder(side: String, currency: Currency, share: Share): IO[Unit] =
           exchangeInfo.symbols.find(assetOnExchange(_, currency)) match {
             case Some(exchangeSymbol) if shareIsInLotSize(exchangeSymbol, share.value) =>
               for {
                 timestamp <- getServerTime
-                shareValue  = roundAndAdjustShare(exchangeSymbol, share.value)
-                queryParams = refineV[NonEmpty](s"symbol=$symbolName&side=$side&type=MARKET&quantity=$shareValue&timestamp=$timestamp").toOption.get
+                symbolName     = exchangeSymbol.baseAsset + exchangeSymbol.quoteAsset
+                shareValue     = roundAndAdjustShare(exchangeSymbol, share.value)
+                quoteOrBaseQty = if (exchangeSymbol.baseAsset == "BTC") "quoteOrderQty" else "quantity"
+                queryParams    = refineV[NonEmpty](s"symbol=$symbolName&side=$side&type=MARKET&$quoteOrBaseQty=$shareValue&timestamp=$timestamp").toOption.get
                 signature <- signIO(secretKey, queryParams)
                 response <- basicRequest
-                  .post(
-                    uri"https://api.binance.com/api/v3/order/test"
-                      .params(
-                        "signature" -> signature.value,
-                        "symbol"    -> symbolName,
-                        "type"      -> "MARKET",
-                        "quantity"  -> shareValue.toString,
-                        "timestamp" -> timestamp.toString,
-                        "side"      -> side
-                      ))
-                  .body(queryParams)
+                  .post(uri"https://api.binance.com/api/v3/order/test")
+                  .body(queryParams + s"&signature=$signature")
                   .header("X-MBX-APIKEY", apiKey.value)
                   .send()(backend, refl)
-                res <- if (response.code.isSuccess) IO.unit else IO(println(s"Error while trying to send $queryParams: ${response.body}"))
+                res <- if (response.code.isSuccess) IO.unit else IO(println(s"Error while trying to send $queryParams with signature $signature: ${response.body}"))
               } yield res
             case Some(_) => IO(println("Target share is too low or too high"))
-            case None    => IO(println(s"Asset $symbolName not found on exchange"))
+            case None    => IO(println(s"Asset ${currency.name} not found on exchange"))
           }
-        }
+
+        private def getServerTime: IO[Long] = IO(System.currentTimeMillis() + serverTimeOffset)
       }
     }
 
   private def assetOnExchange(es: ExchangeSymbol, currency: Currency): Boolean =
-    es.baseAsset == currency.name.value.toUpperCase && es.quoteAsset == "BTC"
+    (es.baseAsset == currency.name.value.toUpperCase && es.quoteAsset == "BTC") || (es.quoteAsset == currency.name.value.toUpperCase && es.baseAsset == "BTC")
 
-  private def roundAndAdjustShare(exchangeSymbol: ExchangeSymbol, share: PositiveBigDecimal): Unit = {
+  private def roundAndAdjustShare(exchangeSymbol: ExchangeSymbol, share: PositiveBigDecimal) = {
     val adjustedToStepSize = exchangeSymbol.filters
       .collectFirst {
         case LotSize(_, _, stepSize, "LOT_SIZE") if BigDecimal(stepSize) > 0 => (share.value / BigDecimal(stepSize)).toInt * BigDecimal(stepSize)

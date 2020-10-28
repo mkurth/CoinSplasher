@@ -1,7 +1,7 @@
 package com.mkurth.coinsplasher.console
 
 import cats.data.EitherT
-import cats.effect.ExitCase.Canceled
+import cats.effect.ExitCase.{Canceled, Error}
 import cats.effect.{ExitCode, IO, IOApp}
 import com.mkurth.coinsplasher.domain.RebalancePortfolio._
 import com.mkurth.coinsplasher.domain.RefinedOps.{NELOps, NonEmptyString}
@@ -32,10 +32,9 @@ object Console extends IOApp {
         )
       strategy <- readNonEmptyLine("Choose a strategy")
       exitCode <- main(secretKey, apiKey, splashTo, currency, strategy).guaranteeCase {
-        case Canceled =>
-          IO(println("Interrupted: releasing and exiting!"))
-        case _ =>
-          IO(println("Normal exit!"))
+        case Canceled => IO(println("Interrupted: releasing and exiting!"))
+        case Error(e) => IO(println(s"Error occurred: $e"))
+        case _        => IO(println("Normal exit!"))
       }
     } yield exitCode
 
