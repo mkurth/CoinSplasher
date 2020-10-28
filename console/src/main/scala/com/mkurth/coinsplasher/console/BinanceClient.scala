@@ -117,7 +117,7 @@ object BinanceClient {
 
         private def sendOrder(side: String, currency: Currency, share: Share): IO[Unit] =
           exchangeInfo.symbols.find(assetOnExchange(_, currency)) match {
-            case Some(exchangeSymbol) if shareIsInLotSize(exchangeSymbol, share.value) =>
+            case Some(exchangeSymbol) if shareIsInLotSize(exchangeSymbol, share.value) && shareIsMinNotional(exchangeSymbol, share.value) =>
               for {
                 timestamp <- getServerTime
                 symbolName     = exchangeSymbol.baseAsset + exchangeSymbol.quoteAsset
@@ -132,7 +132,7 @@ object BinanceClient {
                   .send()(backend, refl)
                 res <- if (response.code.isSuccess) IO.unit else IO(println(s"Error while trying to send $queryParams with signature $signature: ${response.body}"))
               } yield res
-            case Some(_) => IO(println("Target share is too low or too high"))
+            case Some(_) => IO(println(s"Target share ($share) is too low or too high for ${currency.name}"))
             case None    => IO(println(s"Asset ${currency.name} not found on exchange"))
           }
 
@@ -158,6 +158,12 @@ object BinanceClient {
       case _                                      => true
     }
 
+  private def shareIsMinNotional(exchangeSymbol: ExchangeSymbol, share: PositiveBigDecimal): Boolean =
+    exchangeSymbol.filters.forall {
+      case MinNotional(minNotional, true, _) => share.value >= BigDecimal(minNotional)
+      case _                                 => true
+    }
+
   private def signIO(secretKey: SecretKey, queryParams: Refined[String, NonEmpty]) =
     sign(queryParams, secretKey) match {
       case Some(value) => IO.pure(value)
@@ -168,6 +174,6 @@ object BinanceClient {
     val mac           = Mac.getInstance("HmacSHA256")
     val secretKeySpec = new SecretKeySpec(secretKey.value.getBytes(), "HmacSHA256")
     mac.init(secretKeySpec)
-    refineV[NonEmpty](String.format("%032x", new BigInteger(1, mac.doFinal(data.value.getBytes())))).toOption
+    refineV[NonEmpty](("00" + String.format("%032x", new BigInteger(1, mac.doFinal(data.value.getBytes())))).takeRight(64)).toOption
   }
 }
