@@ -22,7 +22,6 @@ import sttp.client.asynchttpclient.cats.AsyncHttpClientCatsBackend
 import sttp.client.circe._
 import cats.syntax.functor._
 import com.mkurth.coinsplasher.domain.{Currency, Share}
-import sttp.model.Uri
 
 import scala.<:<.refl
 
@@ -38,7 +37,6 @@ trait BinanceClient[F[_], E] {
   def avgPrice(symbol: NonEmptyString): IO[Either[E, BigDecimal Refined Positive]]
   def putSellOrders(sellOrders: NonEmptyList[SellOrder]): F[Unit]
   def putBuyOrders(buyOrders: NonEmptyList[BuyOrder]): F[Unit]
-  def exchangeInfo: F[ExchangeInfo]
 
 }
 
@@ -81,85 +79,70 @@ object BinanceClient {
 
   implicit private val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  def apply(secretKey: SecretKey, apiKey: ApiKey): IO[BinanceClient[IO, String]] = AsyncHttpClientCatsBackend[IO]().map { backend =>
-    new BinanceClient[IO, String] {
+  def apply(secretKey: SecretKey, apiKey: ApiKey): IO[BinanceClient[IO, String]] =
+    for {
+      backend      <- AsyncHttpClientCatsBackend[IO]()
+      exchangeInfo <- basicRequest.get(uri"https://api.binance.com/api/v3/exchangeInfo").response(asJson[ExchangeInfo]).send()(backend, refl).map(_.body.toOption.get)
+    } yield {
+      new BinanceClient[IO, String] {
 
-      override def getServerTime: IO[Long] =
-        for {
-          response <- basicRequest.get(uri"https://api.binance.com/api/v3/time").response(asJson[ServerTimeResponse]).send()(backend, refl)
-        } yield {
-          response.body.map(_.serverTime).getOrElse(0L)
-        }
+        override def getServerTime: IO[Long] =
+          basicRequest.get(uri"https://api.binance.com/api/v3/time").response(asJson[ServerTimeResponse]).send()(backend, refl).map(_.body.map(_.serverTime).getOrElse(0L))
 
-      override def currentBalance: IO[Either[String, AccountBalance]] =
-        for {
-          timestamp <- getServerTime
-          queryParams = refineV[NonEmpty](s"recvWindow=60000&timestamp=$timestamp").toOption.get
-          signature <- signIO(secretKey, queryParams)
-          response <- basicRequest
-            .get(uri"https://api.binance.com/api/v3/account?recvWindow=60000&timestamp=$timestamp&signature=$signature")
-            .header("X-MBX-APIKEY", apiKey.value)
-            .response(asJson[AccountBalance])
+        override def currentBalance: IO[Either[String, AccountBalance]] =
+          for {
+            timestamp <- getServerTime
+            queryParams = refineV[NonEmpty](s"recvWindow=60000&timestamp=$timestamp").toOption.get
+            signature <- signIO(secretKey, queryParams)
+            response <- basicRequest
+              .get(uri"https://api.binance.com/api/v3/account?recvWindow=60000&timestamp=$timestamp&signature=$signature")
+              .header("X-MBX-APIKEY", apiKey.value)
+              .response(asJson[AccountBalance])
+              .send()(backend, refl)
+          } yield {
+            response.body.left.map(_.toString).map(ab => ab.copy(balances = ab.balances.filter(_.free.value > 0)))
+          }
+
+        override def putSellOrders(sellOrders: NonEmptyList[SellOrder]): IO[Unit] = sellOrders.traverse(so => sendOrder("SELL", so.currency, so.share)).as(())
+        override def putBuyOrders(buyOrders: NonEmptyList[BuyOrder]): IO[Unit]    = buyOrders.traverse(bo => sendOrder("BUY", bo.currency, bo.share)).as(())
+        override def avgPrice(symbol: Refined[String, NonEmpty]): IO[Either[String, Refined[BigDecimal, Positive]]] =
+          basicRequest
+            .get(uri"https://api.binance.com/api/v3/avgPrice?symbol=$symbol")
+            .response(asJson[AvgPrice])
             .send()(backend, refl)
-        } yield {
-          response.body.left.map(_.toString).map(ab => ab.copy(balances = ab.balances.filter(_.free.value > 0)))
-        }
+            .map(_.body.flatMap(avg => refineV[Positive](BigDecimal(avg.price))).left.map(_.toString))
 
-      override def putSellOrders(sellOrders: NonEmptyList[SellOrder]): IO[Unit] =
-        for {
-          exchangeInfo <- exchangeInfo
-          _            <- sellOrders.traverse(so => sendOrder(backend, "SELL", so.currency, exchangeInfo, so.share))
-        } yield ()
-
-      override def putBuyOrders(buyOrders: NonEmptyList[BuyOrder]): IO[Unit] =
-        for {
-          exchangeInfo <- exchangeInfo
-          _            <- buyOrders.traverse(bo => sendOrder(backend, "BUY", bo.currency, exchangeInfo, bo.share))
-        } yield ()
-
-      override def avgPrice(symbol: Refined[String, NonEmpty]): IO[Either[String, Refined[BigDecimal, Positive]]] =
-        for {
-          response <- basicRequest.get(uri"https://api.binance.com/api/v3/avgPrice?symbol=$symbol").response(asJson[AvgPrice]).send()(backend, refl)
-        } yield {
-          response.body.flatMap(avg => refineV[Positive](BigDecimal(avg.price))).left.map(_.toString)
-        }
-
-      val exchangeInfo: IO[ExchangeInfo] =
-        for {
-          response <- basicRequest.get(uri"https://api.binance.com/api/v3/exchangeInfo").response(asJson[ExchangeInfo]).send()(backend, refl)
-        } yield response.body.toOption.get
-
-      private def sendOrder(backend: SttpBackend[IO, Nothing, WebSocketHandler], side: String, currency: Currency, exchangeInfo: ExchangeInfo, share: Share): IO[Unit] = {
-        val symbolName = currency.name.value.toUpperCase + "BTC"
-        exchangeInfo.symbols.find(assetOnExchange(_, currency)) match {
-          case Some(exchangeSymbol) if shareIsInLotSize(exchangeSymbol, share.value) =>
-            for {
-              timestamp <- getServerTime
-              shareValue  = roundAndAdjustShare(exchangeSymbol, share.value)
-              queryParams = refineV[NonEmpty](s"symbol=$symbolName&side=$side&type=MARKET&quantity=$shareValue&timestamp=$timestamp").toOption.get
-              signature <- signIO(secretKey, queryParams)
-              response <- basicRequest
-                .post(
-                  uri"https://api.binance.com/api/v3/order/test"
-                    .params(
-                      "signature" -> signature.value,
-                      "symbol"    -> symbolName,
-                      "type"      -> "MARKET",
-                      "quantity"  -> shareValue.toString,
-                      "timestamp" -> timestamp.toString,
-                      "side"      -> side
-                    ))
-                .body(queryParams)
-                .header("X-MBX-APIKEY", apiKey.value)
-                .send()(backend, refl)
-              res <- if (response.code.isSuccess) IO.unit else IO(println(s"Error while trying to send $queryParams: ${response.body}"))
-            } yield res
-          case Some(_) => IO(println("Target share is too low or too high"))
-          case None    => IO(println(s"Asset $symbolName not found on exchange"))
+        private def sendOrder(side: String, currency: Currency, share: Share): IO[Unit] = {
+          val symbolName = currency.name.value.toUpperCase + "BTC"
+          exchangeInfo.symbols.find(assetOnExchange(_, currency)) match {
+            case Some(exchangeSymbol) if shareIsInLotSize(exchangeSymbol, share.value) =>
+              for {
+                timestamp <- getServerTime
+                shareValue  = roundAndAdjustShare(exchangeSymbol, share.value)
+                queryParams = refineV[NonEmpty](s"symbol=$symbolName&side=$side&type=MARKET&quantity=$shareValue&timestamp=$timestamp").toOption.get
+                signature <- signIO(secretKey, queryParams)
+                response <- basicRequest
+                  .post(
+                    uri"https://api.binance.com/api/v3/order/test"
+                      .params(
+                        "signature" -> signature.value,
+                        "symbol"    -> symbolName,
+                        "type"      -> "MARKET",
+                        "quantity"  -> shareValue.toString,
+                        "timestamp" -> timestamp.toString,
+                        "side"      -> side
+                      ))
+                  .body(queryParams)
+                  .header("X-MBX-APIKEY", apiKey.value)
+                  .send()(backend, refl)
+                res <- if (response.code.isSuccess) IO.unit else IO(println(s"Error while trying to send $queryParams: ${response.body}"))
+              } yield res
+            case Some(_) => IO(println("Target share is too low or too high"))
+            case None    => IO(println(s"Asset $symbolName not found on exchange"))
+          }
         }
       }
     }
-  }
 
   private def assetOnExchange(es: ExchangeSymbol, currency: Currency): Boolean =
     es.baseAsset == currency.name.value.toUpperCase && es.quoteAsset == "BTC"
