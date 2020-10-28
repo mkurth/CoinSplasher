@@ -41,8 +41,8 @@ object Console extends IOApp {
 
   private def main[A <: Currency](secretKey: NonEmptyString, apiKey: NonEmptyString, splashTo: PosInt, a: A, strategyChoice: NonEmptyString): IO[ExitCode] =
     for {
-      _ <- IO(println(s"using $a as FIAT currency"))
-      client          = BinanceClient(secretKey, apiKey)
+      _      <- IO(println(s"using $a as FIAT currency"))
+      client <- BinanceClient(secretKey, apiKey)
       gecko           = CoinGeckoClient()
       sourcePortfolio = BinanceSourcePortfolio.get[A](client, gecko, a)
       strategy = gecko.markets[A](a).map {
