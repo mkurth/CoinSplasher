@@ -1,5 +1,6 @@
 package com.mkurth.coinsplasher.console
 
+import cats.Show
 import cats.data.EitherT
 import cats.effect.ExitCase.{Canceled, Error}
 import cats.effect.{ExitCode, IO, IOApp}
@@ -30,7 +31,11 @@ object Console extends IOApp {
             case _                      => Fiat(refineMV[NonEmpty]("eur"), '€')
           }
         )
-      strategy <- readNonEmptyLine("Choose a strategy")
+      strategy <- choose[String]("Choose a strategy", List(DistributeBasedOnMarketCap, NoopStrategy, EquallyDistributeTo).map(_.toString), DistributeBasedOnMarketCap.toString).map(i =>
+        refineV[NonEmpty](i) match {
+          case Left(value)  => throw new IllegalArgumentException(s"$value is not positive")
+          case Right(value) => value
+      })
       exitCode <- main(secretKey, apiKey, splashTo, currency, strategy).guaranteeCase {
         case Canceled => IO(println("Interrupted: releasing and exiting!"))
         case Error(e) => IO(println(s"Error occurred: $e"))
@@ -47,9 +52,9 @@ object Console extends IOApp {
       strategy = gecko.markets[A](a).map {
         case Right(market) =>
           strategyChoice.value match {
-            case "equal"  => EquallyDistributeTo[A](market.take(splashTo))
-            case "market" => DistributeBasedOnMarketCap[A](market.take(splashTo))
-            case _        => NoopStrategy[A]()
+            case "EquallyDistributeTo"        => EquallyDistributeTo[A](market.take(splashTo))
+            case "DistributeBasedOnMarketCap" => DistributeBasedOnMarketCap[A](market.take(splashTo))
+            case _                            => NoopStrategy[A]()
           }
         case Left(_) => NoopStrategy[A]()
       }
@@ -78,4 +83,13 @@ object Console extends IOApp {
         case Left(value)  => throw new IllegalArgumentException(s"$value is empty")
         case Right(value) => value
     })
+
+  private def choose[A: Show](prompt: String, options: List[A], default: A): IO[A] =
+    IO(
+      readLine(
+        prompt + options
+          .map(option => {
+            if (default == option) "[" + Show[A].show(option) + "]" else Show[A].show(option)
+          })
+          .mkString(" (", ", ", ")") + ":\n")).map(v => options.find(option => Show[A].show(option).toLowerCase == v.trim.toLowerCase).getOrElse(default))
 }
